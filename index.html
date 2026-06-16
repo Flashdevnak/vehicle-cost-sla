@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ed">
+<title>การควบคุมต้นทุนรถและ SLA</title>
+<style>
+:root {
+  --page:#f7f4ed;
+  --surface:#ffffff;
+  --surface-2:#fbfaf6;
+  --ink:#20262d;
+  --text:#34404b;
+  --muted:#6d7781;
+  --line:#d9d1c3;
+  --line-2:#ebe5da;
+  --head:#253342;
+  --head-2:#314254;
+  --accent:#a6792a;
+  --green:#24736b;
+  --green-bg:#e9f3f0;
+  --red:#9a3f37;
+  --red-bg:#f8ece8;
+  --blue-bg:#eef3f7;
+  --warn-bg:#fff4db;
+  --max:1160px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--page);
+  color:var(--text);
+  font-family: Tahoma, 'Noto Sans Thai', 'Sarabun', 'Segoe UI', Arial, sans-serif;
+  line-height:1.62;
+  -webkit-text-size-adjust:100%;
+  overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit}
+button{cursor:pointer}
+img,svg,canvas{max-width:100%}
+.topbar{
+  position:sticky;top:0;z-index:50;background:rgba(247,244,237,.96);
+  border-bottom:1px solid var(--line);backdrop-filter: blur(10px);
+}
+.topbar-inner{max-width:var(--max);margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:34px;height:34px;background:var(--head);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;border-bottom:4px solid var(--accent);flex:0 0 auto}
+.brand b{display:block;color:var(--ink);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 11px;color:var(--ink);min-height:38px}
+.btn.main{background:var(--head);border-color:var(--head);color:#fff}
+.navline{border-bottom:1px solid var(--line-2);background:#fffaf2}
+.navline-inner{max-width:var(--max);margin:0 auto;padding:0 20px;display:flex;overflow-x:auto;gap:1px;scrollbar-width:thin}
+.navline a{padding:10px 12px;color:#4d5964;white-space:nowrap;border-bottom:3px solid transparent;font-size:14px}
+.navline a:hover{border-bottom-color:var(--accent);background:#fff}
+.hero{background:var(--head);color:#fff}
+.hero-inner{max-width:var(--max);margin:0 auto;padding:42px 20px 36px}
+.kicker{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.kicker span{border:1px solid rgba(255,255,255,.2);padding:5px 9px;color:#e5edf2;background:rgba(255,255,255,.05);font-size:13px}
+h1{margin:0 0 10px;font-size:clamp(27px,4.6vw,46px);line-height:1.16;color:#fff;letter-spacing:-.015em}
+.hero p{margin:0;max-width:900px;color:#d8e0e6;font-size:clamp(15px,1.8vw,18px)}
+main{max-width:var(--max);margin:0 auto;padding:24px 20px 52px}
+.section{background:var(--surface);border:1px solid var(--line);margin:0 0 18px}
+.section-head{padding:20px 22px;border-bottom:1px solid var(--line-2);background:var(--surface-2)}
+.section-head h2{margin:0;color:var(--ink);font-size:clamp(20px,2.7vw,28px);line-height:1.25}
+.section-head p{margin:6px 0 0;color:var(--muted)}
+.section-body{padding:22px}
+.lead-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.statement{border-left:5px solid var(--accent);padding:4px 0 4px 16px;color:var(--ink);font-size:18px}
+.summary-list{display:grid;gap:10px}
+.summary-item{display:grid;grid-template-columns:145px 1fr;gap:10px;border-bottom:1px solid var(--line-2);padding:0 0 10px}
+.summary-item:last-child{border-bottom:0}
+.summary-item b{color:var(--ink)}
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.metric{background:#fbfaf7;border-left:4px solid var(--accent);padding:14px}
+.metric small{display:block;color:var(--muted);margin-bottom:4px}
+.metric strong{display:block;color:var(--ink);font-size:22px;line-height:1.2}
+.policy-table-wrap{overflow-x:auto;max-width:100%;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;background:#fff;min-width:860px}
+th{background:var(--head);color:#fff;text-align:left;font-weight:700;padding:13px 12px;border-right:1px solid rgba(255,255,255,.16);font-size:14px}
+td{padding:13px 12px;border-top:1px solid var(--line-2);vertical-align:top}
+td span{color:var(--muted)}
+.amount{white-space:nowrap;font-weight:800}
+.amount.penalty{color:var(--red)}
+.amount.reward{color:var(--green)}
+.mobile-policy-list{display:none}
+.note{background:var(--warn-bg);border-left:5px solid var(--accent);padding:14px 16px;color:#3f3521;margin-top:14px}
+.rule-detail{border-top:1px solid var(--line);padding:22px}
+.rule-detail:first-child{border-top:0}
+.rule-title-line{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.rule-title-line h3{margin:0;color:var(--ink);font-size:21px;line-height:1.28}
+.rule-title-line p{margin:4px 0 0;color:var(--muted)}
+.number{display:inline-block;background:var(--head);color:#fff;min-width:44px;text-align:center;padding:2px 8px;margin-bottom:8px;font-weight:700}
+.amount-tag{border:1px solid var(--line);padding:8px 10px;white-space:nowrap;background:#fff;font-weight:800}
+.amount-tag.penalty{color:var(--red);background:var(--red-bg);border-color:#ecd1cc}
+.amount-tag.reward{color:var(--green);background:var(--green-bg);border-color:#cee2de}
+.purpose{margin:14px 0 16px;color:var(--text)}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.detail-block{background:#fcfbf8;border-top:3px solid var(--line);padding:14px}
+.detail-block h4{margin:0 0 8px;color:var(--ink)}
+ul{margin:0;padding-left:20px}
+li{margin:4px 0}
+.calc-layout{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+.calc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.calc-field{display:block;border:1px solid var(--line);background:#fff;padding:12px}
+.calc-field span{display:block;color:var(--ink);font-weight:700;min-height:46px}
+.calc-field.penalty{border-left:5px solid var(--red)}
+.calc-field.reward{border-left:5px solid var(--green)}
+.calc-field input{width:100%;margin-top:9px;border:1px solid var(--line);padding:10px;background:#fbfaf7}
+.result-box{border:1px solid var(--line);background:var(--surface-2);position:sticky;top:112px}
+.result-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line-2);padding:13px 14px}
+.result-row:last-child{border-bottom:0}
+.result-row b{color:var(--ink)}
+.result-row .red{color:var(--red);font-weight:800}
+.result-row .green{color:var(--green);font-weight:800}
+.result-row.net{background:var(--head);color:#fff}
+.result-row.net b,.result-row.net span{color:#fff;font-size:18px}
+.split{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+.split div{background:#fff;border:1px solid var(--line-2);padding:10px}
+.split small{display:block;color:var(--muted)}
+.split strong{color:var(--ink)}
+.check-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.check-block{border-left:5px solid var(--head);background:#fbfaf7;padding:16px}
+.check-block h3{margin:0 0 8px;color:var(--ink)}
+.role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.role-block{background:#fbfaf7;border-top:4px solid var(--accent);padding:16px}
+.role-block h3{margin:0 0 8px;color:var(--ink)}
+.footer{max-width:var(--max);margin:0 auto 32px;padding:0 20px;color:var(--muted);font-size:13px}
+.share-status{font-size:13px;color:var(--green);padding-left:4px}
+@media (min-width: 1180px){
+  .section{margin-bottom:22px}
+}
+@media (max-width: 1023px){
+  .topbar-inner{align-items:flex-start;flex-direction:column}
+  .toolbar{width:100%;justify-content:flex-start}
+  .lead-grid,.calc-layout{grid-template-columns:1fr}
+  .result-box{position:static}
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .detail-grid{grid-template-columns:1fr 1fr}
+  .calc-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width: 767px){
+  body{background:#fffaf3}
+  .topbar-inner{padding:10px 14px}
+  .brand span{display:none}
+  .toolbar{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .btn{justify-content:center;padding:8px 7px;font-size:13px}
+  .navline-inner{padding:0 14px}
+  .navline a{font-size:13px;padding:9px 10px}
+  .hero-inner{padding:30px 14px 26px}
+  main{padding:14px 14px 34px}
+  .section{border-left:0;border-right:0;margin-left:-14px;margin-right:-14px}
+  .section-head,.section-body,.rule-detail{padding-left:14px;padding-right:14px}
+  .metric-grid,.detail-grid,.calc-grid,.check-grid,.role-grid{grid-template-columns:1fr}
+  .summary-item{grid-template-columns:1fr;gap:2px}
+  .statement{font-size:16px}
+  .policy-table-wrap{display:none}
+  .mobile-policy-list{display:grid;gap:10px}
+  .mobile-rule{border:1px solid var(--line);border-left:5px solid var(--red);background:#fff;padding:13px}
+  .mobile-rule.reward{border-left-color:var(--green)}
+  .mobile-rule-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .mobile-rule-top span{background:var(--head);color:#fff;padding:1px 7px;font-weight:700}
+  .mobile-rule-top strong{color:var(--red);text-align:right}
+  .mobile-rule.reward .mobile-rule-top strong{color:var(--green)}
+  .mobile-rule h3{margin:0 0 6px;color:var(--ink);font-size:17px;line-height:1.35}
+  .mobile-rule p{margin:0;color:var(--text)}
+  .mobile-meta{margin-top:8px;color:var(--muted);font-size:13px}
+  .rule-title-line{display:block}
+  .amount-tag{display:inline-block;margin-top:10px;white-space:normal}
+  .calc-field span{min-height:auto}
+  .split{grid-template-columns:1fr}
+  .result-row.net b,.result-row.net span{font-size:16px}
+}
+@media (max-width: 390px){
+  h1{font-size:25px}
+  .toolbar{grid-template-columns:1fr}
+  .kicker span{font-size:12px}
+}
+@media print{
+  .topbar,.navline,.toolbar,.btn{display:none!important}
+  body{background:white;color:#000}
+  .hero{background:white;color:#000;border-bottom:2px solid #000}
+  .hero p,h1{color:#000}
+  main{max-width:none;padding:16px}
+  .section{break-inside:avoid;border-color:#999}
+  .policy-table-wrap{display:block}
+  .mobile-policy-list{display:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top" aria-label="กลับด้านบน">
+      <div class="mark">SLA</div>
+      <div><b>Vehicle Cost & SLA Control</b><span>Professional responsive report</span></div>
+    </a>
+    <div class="toolbar">
+      <button class="btn main" id="shareBtn" type="button">แชร์ไฟล์/ลิงก์</button>
+      <button class="btn" id="printBtn" type="button">Print / Save PDF</button>
+      <button class="btn" id="fullBtn" type="button">เต็มจอ</button>
+      <span class="share-status" id="shareStatus" role="status"></span>
+    </div>
+  </div>
+  <nav class="navline" aria-label="สารบัญ">
+    <div class="navline-inner">
+      <a href="#overview">ภาพรวม</a>
+      <a href="#matrix">เกณฑ์สรุป</a>
+      <a href="#details">รายละเอียด</a>
+      <a href="#calculator">คำนวณ</a>
+      <a href="#responsibility">ผู้รับผิดชอบ</a>
+      <a href="#checklist">เช็กลิสต์</a>
+    </div>
+  </nav>
+</header>
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <div class="kicker"><span>เริ่มบังคับใช้ 21 มิถุนายน 2569</span><span>Cost Control</span><span>SLA Control</span><span>Penalty & Reward</span></div>
+    <h1>สรุปนโยบายควบคุมต้นทุนรถและ SLA</h1>
+    <p>เอกสารสรุปสำหรับใช้ประชุมและสื่อสารหน้างาน โดยแยกเงื่อนไขค่าปรับ รางวัล หลักฐานอุทธรณ์ และแนวทางควบคุมรายวันให้ตรวจสอบได้ง่าย</p>
+  </div>
+</section>
+<main>
+  <section class="section" id="overview">
+    <div class="section-head"><h2>ภาพรวมที่ต้องควบคุม</h2><p>เน้นลดต้นทุนรถ ลดความล่าช้า และลดพัสดุคงคลังที่กระทบ SLA</p></div>
+    <div class="section-body">
+      <div class="lead-grid">
+        <div class="statement">หัวใจของนโยบายนี้คือ “รถต้องใช้ให้คุ้ม เวลาออกต้องตรง โหลดต้องเหมาะสม และพัสดุไม่ควรค้างเพราะกระบวนการหน้างาน” ทุกกรณีต้องมีข้อมูลและหลักฐานรองรับ</div>
+        <div class="summary-list">
+          <div class="summary-item"><b>วิธีควบคุม</b><span>ติดตามข้อมูล + ปรับปรุงหน้างาน + ทบทวนผลลัพธ์</span></div>
+          <div class="summary-item"><b>พื้นที่บังคับใช้</b><span>FD + LH, รถเที่ยวหลัก, รถเสริม, รถ Standby และกระบวนการคัดแยก</span></div>
+          <div class="summary-item"><b>ผลกระทบหลัก</b><span>ค่าปรับรายครั้ง/รายชิ้น และรางวัลที่นำไปหักกับค่าปรับรวม</span></div>
+        </div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><small>หมวดควบคุม</small><strong>5 หมวด</strong></div>
+        <div class="metric"><small>หัวข้อค่าปรับ</small><strong>5 หัวข้อ</strong></div>
+        <div class="metric"><small>หัวข้อรางวัล</small><strong>2 หัวข้อ</strong></div>
+        <div class="metric"><small>เริ่มใช้</small><strong>21/06/2569</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="matrix">
+    <div class="section-head"><h2>เกณฑ์สรุปค่าปรับและรางวัล</h2><p>บนคอม/แท็บเล็ตจะแสดงเป็นตาราง ส่วนมือถือจะแสดงเป็นรายการเพื่อไม่ให้ล้นจอ</p></div>
+    <div class="section-body">
+      <div class="policy-table-wrap" aria-label="ตารางสรุปสำหรับหน้าจอใหญ่">
+        <table>
+          <thead><tr><th>ลำดับ</th><th>หมวด</th><th>หัวข้อและเป้าหมาย</th><th>เกณฑ์เงิน</th><th>ประเภท</th></tr></thead>
+          <tbody>
+    <tr>
+      <td>1</td>
+      <td>การควบคุมรถเสริม</td>
+      <td><b>ขอรถเสริมหลังเส้นหลักพ่วงสาขาออกแล้ว</b><br><span>ลดการใช้รถเสริมเกินความจำเป็น และควบคุมให้การขอรถสอดคล้องกับปริมาณพัสดุจริง</span></td>
+      <td class="amount penalty">1,000 บาท/ครั้ง</td>
+      <td>ค่าปรับ</td>
+    </tr>
+    <tr>
+      <td>2.1</td>
+      <td>การควบคุมอัตราออกเดินรถตรงเวลา</td>
+      <td><b>ปล่อยรถล่าช้ากว่ากำหนด</b><br><span>ควบคุมเวลาปล่อยรถ FD + LH ทั้งรถเที่ยวหลักและรถเสริม เพื่อไม่ให้กระทบ SLA ปลายทาง</span></td>
+      <td class="amount penalty">300 บาท/ครั้ง</td>
+      <td>ค่าปรับ</td>
+    </tr>
+    <tr>
+      <td>2.2</td>
+      <td>การควบคุมอัตราออกเดินรถตรงเวลา</td>
+      <td><b>ปล่อยรถหลังเวลา 12:00 น.</b><br><span>ควบคุมไม่ให้รถ FD + LH ออกหลังเที่ยง โดยเฉพาะรอบที่กระทบการส่งต่อและ SLA</span></td>
+      <td class="amount penalty">300 บาท/ครั้ง</td>
+      <td>ค่าปรับ</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>การควบคุมอัตราบรรทุก</td>
+      <td><b>รถเที่ยวหลักบรรทุกไม่เต็มคัน และยังมีพัสดุคงคลัง</b><br><span>เพิ่มประสิทธิภาพการใช้รถเที่ยวหลัก ไม่ปล่อยรถไม่เต็มในขณะที่จุดดรอปยังมีพัสดุเหลืออยู่</span></td>
+      <td class="amount penalty">500 บาท/ครั้ง</td>
+      <td>ค่าปรับ</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>การควบคุม SLA คงคลัง</td>
+      <td><b>เคลียร์เครื่องคัดแยกไม่ทันก่อนเวลาปิดรอบรถ</b><br><span>ลดพัสดุขนาดเล็กตกค้างบนเครื่องคัดแยก และลดความล่าช้าจากการเคลียร์ไม่ทันก่อนรอบรถ</span></td>
+      <td class="amount penalty">0.5 บาท/ชิ้น</td>
+      <td>ค่าปรับ</td>
+    </tr>
+    <tr>
+      <td>5.1</td>
+      <td>หัวข้อการให้รางวัล</td>
+      <td><b>รถ Standby มาถึงช้า แต่ HUB ปล่อยรถได้ตรงเวลา</b><br><span>ส่งเสริมการแก้ปัญหาหน้างาน เมื่อรถ Standby ล่าช้าแต่ทีมยังบริหารให้รถออกตรงเวลาได้</span></td>
+      <td class="amount reward">รางวัล 200 บาท/ครั้ง</td>
+      <td>รางวัล</td>
+    </tr>
+    <tr>
+      <td>5.2</td>
+      <td>หัวข้อการให้รางวัล</td>
+      <td><b>อัตราบรรทุกตั้งแต่ 120% ขึ้นไป</b><br><span>ส่งเสริมการใช้พื้นที่บรรทุกอย่างคุ้มค่า เมื่อจำนวนพัสดุที่โหลดสูงกว่าความจุที่กำหนด</span></td>
+      <td class="amount reward">รางวัล 100 บาท/ครั้ง</td>
+      <td>รางวัล</td>
+    </tr></tbody>
+        </table>
+      </div>
+      <div class="mobile-policy-list" aria-label="รายการสรุปสำหรับมือถือ">
+    <article class="mobile-rule penalty">
+      <div class="mobile-rule-top"><span>1</span><strong>1,000 บาท/ครั้ง</strong></div>
+      <h3>ขอรถเสริมหลังเส้นหลักพ่วงสาขาออกแล้ว</h3>
+      <p>ลดการใช้รถเสริมเกินความจำเป็น และควบคุมให้การขอรถสอดคล้องกับปริมาณพัสดุจริง</p>
+      <div class="mobile-meta">การควบคุมรถเสริม</div>
+    </article>
+    <article class="mobile-rule penalty">
+      <div class="mobile-rule-top"><span>2.1</span><strong>300 บาท/ครั้ง</strong></div>
+      <h3>ปล่อยรถล่าช้ากว่ากำหนด</h3>
+      <p>ควบคุมเวลาปล่อยรถ FD + LH ทั้งรถเที่ยวหลักและรถเสริม เพื่อไม่ให้กระทบ SLA ปลายทาง</p>
+      <div class="mobile-meta">การควบคุมอัตราออกเดินรถตรงเวลา</div>
+    </article>
+    <article class="mobile-rule penalty">
+      <div class="mobile-rule-top"><span>2.2</span><strong>300 บาท/ครั้ง</strong></div>
+      <h3>ปล่อยรถหลังเวลา 12:00 น.</h3>
+      <p>ควบคุมไม่ให้รถ FD + LH ออกหลังเที่ยง โดยเฉพาะรอบที่กระทบการส่งต่อและ SLA</p>
+      <div class="mobile-meta">การควบคุมอัตราออกเดินรถตรงเวลา</div>
+    </article>
+    <article class="mobile-rule penalty">
+      <div class="mobile-rule-top"><span>3</span><strong>500 บาท/ครั้ง</strong></div>
+      <h3>รถเที่ยวหลักบรรทุกไม่เต็มคัน และยังมีพัสดุคงคลัง</h3>
+      <p>เพิ่มประสิทธิภาพการใช้รถเที่ยวหลัก ไม่ปล่อยรถไม่เต็มในขณะที่จุดดรอปยังมีพัสดุเหลืออยู่</p>
+      <div class="mobile-meta">การควบคุมอัตราบรรทุก</div>
+    </article>
+    <article class="mobile-rule penalty">
+      <div class="mobile-rule-top"><span>4</span><strong>0.5 บาท/ชิ้น</strong></div>
+      <h3>เคลียร์เครื่องคัดแยกไม่ทันก่อนเวลาปิดรอบรถ</h3>
+      <p>ลดพัสดุขนาดเล็กตกค้างบนเครื่องคัดแยก และลดความล่าช้าจากการเคลียร์ไม่ทันก่อนรอบรถ</p>
+      <div class="mobile-meta">การควบคุม SLA คงคลัง</div>
+    </article>
+    <article class="mobile-rule reward">
+      <div class="mobile-rule-top"><span>5.1</span><strong>รางวัล 200 บาท/ครั้ง</strong></div>
+      <h3>รถ Standby มาถึงช้า แต่ HUB ปล่อยรถได้ตรงเวลา</h3>
+      <p>ส่งเสริมการแก้ปัญหาหน้างาน เมื่อรถ Standby ล่าช้าแต่ทีมยังบริหารให้รถออกตรงเวลาได้</p>
+      <div class="mobile-meta">หัวข้อการให้รางวัล</div>
+    </article>
+    <article class="mobile-rule reward">
+      <div class="mobile-rule-top"><span>5.2</span><strong>รางวัล 100 บาท/ครั้ง</strong></div>
+      <h3>อัตราบรรทุกตั้งแต่ 120% ขึ้นไป</h3>
+      <p>ส่งเสริมการใช้พื้นที่บรรทุกอย่างคุ้มค่า เมื่อจำนวนพัสดุที่โหลดสูงกว่าความจุที่กำหนด</p>
+      <div class="mobile-meta">หัวข้อการให้รางวัล</div>
+    </article></div>
+      <div class="note">หมายเหตุ: กรณี “ปล่อยรถล่าช้า” และ “ปล่อยรถหลัง 12:00 น.” ไม่คิดซ้ำในเหตุการณ์เดียวกัน ให้ยึดข้อมูลตรวจพบและหลักฐานประกอบเป็นหลัก</div>
+    </div>
+  </section>
+
+  <section class="section" id="details">
+    <div class="section-head"><h2>รายละเอียดแต่ละหัวข้อ</h2><p>แยกเงื่อนไขตรวจจับ เหตุยกเว้น และหลักฐานที่ควรเตรียม</p></div>
+    <div>
+    <section class="rule-detail" id="ot-extra-truck">
+      <div class="rule-title-line">
+        <div><span class="number">1</span><h3>ขอรถเสริมหลังเส้นหลักพ่วงสาขาออกแล้ว</h3><p>การควบคุมรถเสริม</p></div>
+        <strong class="amount-tag penalty">1,000 บาท/ครั้ง</strong>
+      </div>
+      <p class="purpose">ลดการใช้รถเสริมเกินความจำเป็น และควบคุมให้การขอรถสอดคล้องกับปริมาณพัสดุจริง</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>เส้นหลักพ่วงสาขา A+B ออกเดินรถแล้ว แต่ยังมีการขอรถเสริมเพิ่ม</li><li>ปริมาณพัสดุของจุด A/B ที่โหลดบนรถพ่วงสาขาน้อยกว่า 40%</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>รถเที่ยวหลักบรรทุกเต็ม และเส้นหลักพ่วง A+B ก็บรรทุกเต็ม</li><li>ปริมาณพัสดุของจุด A/B บนรถพ่วงตั้งแต่ 40% ขึ้นไป</li><li>มีข้อมูลจำนวนพัสดุและรูปการโหลดประกอบครบถ้วน</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>จำนวนพัสดุของรถเที่ยวหลัก</li><li>จำนวนพัสดุของเส้นหลักพ่วง A+B</li><li>รูปถ่ายการโหลด/สภาพการโหลด</li><li>ข้อมูลการขอรถเสริมและเวลาปล่อยรถ</li></ul></div>
+      </div>
+    </section>
+    <section class="rule-detail" id="late-departure">
+      <div class="rule-title-line">
+        <div><span class="number">2.1</span><h3>ปล่อยรถล่าช้ากว่ากำหนด</h3><p>การควบคุมอัตราออกเดินรถตรงเวลา</p></div>
+        <strong class="amount-tag penalty">300 บาท/ครั้ง</strong>
+      </div>
+      <p class="purpose">ควบคุมเวลาปล่อยรถ FD + LH ทั้งรถเที่ยวหลักและรถเสริม เพื่อไม่ให้กระทบ SLA ปลายทาง</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>รถ FD + LH เที่ยวหลักหรือเที่ยวเสริมออกเดินรถล่าช้ากว่ากำหนด</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>กรณีรถ Standby มาถึงล่าช้า สามารถยื่นอุทธรณ์เพื่อขอยกเว้นได้</li><li>ต้องมีข้อมูลเวลารถ Standby และหลักฐานประกอบชัดเจน</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>เวลา Standby ถึงหน้างาน</li><li>เวลาเริ่มโหลดและเวลาปล่อยรถ</li><li>ข้อมูลจากระบบ/หน้างานที่ตรวจสอบได้</li></ul></div>
+      </div>
+    </section>
+    <section class="rule-detail" id="after-noon">
+      <div class="rule-title-line">
+        <div><span class="number">2.2</span><h3>ปล่อยรถหลังเวลา 12:00 น.</h3><p>การควบคุมอัตราออกเดินรถตรงเวลา</p></div>
+        <strong class="amount-tag penalty">300 บาท/ครั้ง</strong>
+      </div>
+      <p class="purpose">ควบคุมไม่ให้รถ FD + LH ออกหลังเที่ยง โดยเฉพาะรอบที่กระทบการส่งต่อและ SLA</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>รถ FD + LH เที่ยวหลักหรือเที่ยวเสริมออกเดินรถหลังเวลา 12:00 น.</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>กรณีล่าช้าจากรถ Standby สามารถยื่นอุทธรณ์ได้</li><li>กรณีนี้ไม่คิดซ้ำกับหัวข้อรถออกล่าช้า โดยนับเพียง 1 ครั้งตามข้อมูลตรวจพบ</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>เวลา Standby</li><li>เวลาออกเดินรถจริง</li><li>ข้อมูลเหตุล่าช้าและผู้รับผิดชอบหน้างาน</li></ul></div>
+      </div>
+    </section>
+    <section class="rule-detail" id="load-rate">
+      <div class="rule-title-line">
+        <div><span class="number">3</span><h3>รถเที่ยวหลักบรรทุกไม่เต็มคัน และยังมีพัสดุคงคลัง</h3><p>การควบคุมอัตราบรรทุก</p></div>
+        <strong class="amount-tag penalty">500 บาท/ครั้ง</strong>
+      </div>
+      <p class="purpose">เพิ่มประสิทธิภาพการใช้รถเที่ยวหลัก ไม่ปล่อยรถไม่เต็มในขณะที่จุดดรอปยังมีพัสดุเหลืออยู่</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>รถเที่ยวหลักคันสุดท้ายของเส้นทางออกเดินรถโดยบรรทุกไม่เต็ม</li><li>ยังมีพัสดุตกค้างอยู่ที่จุดดรอปของเส้นทางนั้น</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>ต้องมีข้อมูลจำนวนพัสดุที่โหลดจริง</li><li>ต้องมีรูปการโหลดสินค้า</li><li>ต้องมีภาพ CCTV แบบ Real-time ของพัสดุคงค้างที่จุดดรอป</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>จำนวนพัสดุโหลดจริง</li><li>รูปถ่ายการโหลดท้ายรถ/ภายในรถ</li><li>ภาพ CCTV จุดดรอปแบบ Real-time</li><li>ยอดพัสดุคงคลังของเส้นทาง</li></ul></div>
+      </div>
+    </section>
+    <section class="rule-detail" id="sorter-clear">
+      <div class="rule-title-line">
+        <div><span class="number">4</span><h3>เคลียร์เครื่องคัดแยกไม่ทันก่อนเวลาปิดรอบรถ</h3><p>การควบคุม SLA คงคลัง</p></div>
+        <strong class="amount-tag penalty">0.5 บาท/ชิ้น</strong>
+      </div>
+      <p class="purpose">ลดพัสดุขนาดเล็กตกค้างบนเครื่องคัดแยก และลดความล่าช้าจากการเคลียร์ไม่ทันก่อนรอบรถ</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>ก่อนเวลาปล่อยรถ ยังเคลียร์พัสดุบนเครื่องคัดแยกไม่เรียบร้อย</li><li>ทำให้พัสดุขนาดเล็กล่าช้าหรือออกไม่ทันรอบ</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>พิจารณาจากข้อมูลระบบและหลักฐานหน้างาน</li><li>ต้องระบุจำนวนพัสดุที่ได้รับผลกระทบได้ชัดเจน</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>จำนวนพัสดุที่ล่าช้า</li><li>เวลาเคลียร์เครื่องคัดแยก</li><li>หลักฐานจากระบบ/ภาพหน้างาน</li></ul></div>
+      </div>
+    </section>
+    <section class="rule-detail" id="standby-reward">
+      <div class="rule-title-line">
+        <div><span class="number">5.1</span><h3>รถ Standby มาถึงช้า แต่ HUB ปล่อยรถได้ตรงเวลา</h3><p>หัวข้อการให้รางวัล</p></div>
+        <strong class="amount-tag reward">รางวัล 200 บาท/ครั้ง</strong>
+      </div>
+      <p class="purpose">ส่งเสริมการแก้ปัญหาหน้างาน เมื่อรถ Standby ล่าช้าแต่ทีมยังบริหารให้รถออกตรงเวลาได้</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>รถ Standby มาถึงล่าช้า</li><li>HUB สามารถปล่อยรถออกได้ตรงเวลาตามกำหนด</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>เงินรางวัลรวมจะนำไปหักกับค่าปรับรวม</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>เวลา Standby ถึงหน้างาน</li><li>เวลาออกเดินรถจริง</li><li>หลักฐานการบริหารจัดการหน้างาน</li></ul></div>
+      </div>
+    </section>
+    <section class="rule-detail" id="load-120-reward">
+      <div class="rule-title-line">
+        <div><span class="number">5.2</span><h3>อัตราบรรทุกตั้งแต่ 120% ขึ้นไป</h3><p>หัวข้อการให้รางวัล</p></div>
+        <strong class="amount-tag reward">รางวัล 100 บาท/ครั้ง</strong>
+      </div>
+      <p class="purpose">ส่งเสริมการใช้พื้นที่บรรทุกอย่างคุ้มค่า เมื่อจำนวนพัสดุที่โหลดสูงกว่าความจุที่กำหนด</p>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>เงื่อนไขที่ถูกตรวจ</h4><ul><li>จำนวนพัสดุที่บรรทุก ÷ จำนวนพัสดุตามความจุที่กำหนด ≥ 120%</li></ul></div>
+        <div class="detail-block"><h4>ยกเว้น / อุทธรณ์</h4><ul><li>เงินรางวัลรวมจะนำไปหักกับค่าปรับรวม</li></ul></div>
+        <div class="detail-block"><h4>หลักฐานที่ควรเตรียม</h4><ul><li>จำนวนพัสดุที่โหลดจริง</li><li>ความจุที่กำหนดของรถ</li><li>รูปถ่ายการโหลดประกอบ</li></ul></div>
+      </div>
+    </section></div>
+  </section>
+
+  <section class="section" id="calculator">
+    <div class="section-head"><h2>เครื่องคำนวณค่าปรับ / รางวัล</h2><p>กรอกจำนวนครั้งหรือจำนวนชิ้น ระบบจะคำนวณยอดรวมและยอดสุทธิทันที</p></div>
+    <div class="section-body">
+      <div class="calc-layout">
+        <div class="calc-grid" id="calcGrid">
+    <label class="calc-field penalty">
+      <span>รถเสริมหลังเส้นหลักพ่วงสาขา (1,000 บาท/ครั้ง)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="penalty" data-rate="1000" aria-label="รถเสริมหลังเส้นหลักพ่วงสาขา (1,000 บาท/ครั้ง)">
+    </label>
+    <label class="calc-field penalty">
+      <span>รถออกล่าช้า (300 บาท/ครั้ง)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="penalty" data-rate="300" aria-label="รถออกล่าช้า (300 บาท/ครั้ง)">
+    </label>
+    <label class="calc-field penalty">
+      <span>รถออกหลัง 12:00 (300 บาท/ครั้ง)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="penalty" data-rate="300" aria-label="รถออกหลัง 12:00 (300 บาท/ครั้ง)">
+    </label>
+    <label class="calc-field penalty">
+      <span>บรรทุกไม่เต็มและมีคงคลัง (500 บาท/ครั้ง)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="penalty" data-rate="500" aria-label="บรรทุกไม่เต็มและมีคงคลัง (500 บาท/ครั้ง)">
+    </label>
+    <label class="calc-field penalty">
+      <span>เครื่องคัดแยกเคลียร์ไม่ทัน (0.5 บาท/ชิ้น)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="penalty" data-rate="0.5" aria-label="เครื่องคัดแยกเคลียร์ไม่ทัน (0.5 บาท/ชิ้น)">
+    </label>
+    <label class="calc-field reward">
+      <span>Standby ช้าแต่ปล่อยตรงเวลา (รางวัล 200 บาท/ครั้ง)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="reward" data-rate="200" aria-label="Standby ช้าแต่ปล่อยตรงเวลา (รางวัล 200 บาท/ครั้ง)">
+    </label>
+    <label class="calc-field reward">
+      <span>บรรทุกตั้งแต่ 120% (รางวัล 100 บาท/ครั้ง)</span>
+      <input type="number" min="0" step="1" value="0" inputmode="numeric" data-kind="reward" data-rate="100" aria-label="บรรทุกตั้งแต่ 120% (รางวัล 100 บาท/ครั้ง)">
+    </label></div>
+        <aside class="result-box" aria-live="polite">
+          <div class="result-row"><b>ค่าปรับรวม</b><span class="red" id="penaltyTotal">0 บาท</span></div>
+          <div class="result-row"><b>รางวัลรวม</b><span class="green" id="rewardTotal">0 บาท</span></div>
+          <div class="result-row net"><b>ยอดสุทธิหลังหักรางวัล</b><span id="netTotal">0 บาท</span></div>
+          <div class="split" aria-label="สัดส่วนหักสำหรับพนักงานไทย">
+            <div><small>AM 50%</small><strong id="amShare">0 บาท</strong></div>
+            <div><small>MG 30%</small><strong id="mgShare">0 บาท</strong></div>
+            <div><small>DM 20%</small><strong id="dmShare">0 บาท</strong></div>
+          </div>
+          <div class="note">การคำนวณนี้เป็นเครื่องมือช่วยสรุปเบื้องต้น ยอดจริงให้ยึดข้อมูลตรวจสอบและการอนุมัติของผู้รับผิดชอบตามเอกสาร</div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="responsibility">
+    <div class="section-head"><h2>ผู้รับผิดชอบและหลักเกณฑ์การหัก</h2><p>สรุปจากหลักเกณฑ์ในไฟล์สำหรับพนักงานสัญชาติไทยและจีน</p></div>
+    <div class="section-body">
+      <div class="role-grid">
+        <div class="role-block"><h3>พนักงานสัญชาติไทย</h3><ul><li>Area Manager, Hub Manager, Deputy Hub Manager</li><li>หักจาก Incentive ตามสัดส่วน AM 50%, MG 30%, DM 20%</li><li>ยอดหักต่อเดือนไม่เกิน Incentive ของเดือนนั้น</li><li>หากหักไม่ครบ ให้ยกยอดคงเหลือไปหักเดือนถัดไปตามเพดานเดิม</li></ul></div>
+        <div class="role-block"><h3>พนักงานสัญชาติจีน</h3><ul><li>Hub Director, Area Manager, Hub Manager, Deputy Hub Manager, QC Manager, IE Manager, IE Deputy Manager, IE Supervisor</li><li>เพดานหักสูงสุด: Incentive + 30% ของเงินเดือนพื้นฐาน</li><li>Area Manager / Hub Manager / Deputy Hub Manager รับผิดชอบพื้นที่ดูแลของตน</li><li>ตำแหน่งอื่นเชื่อมโยงตามขอบเขตประเทศ/สายงานที่กำหนด</li></ul></div>
+      </div>
+      <div class="note">ทุกกรณีค่าปรับให้ดำเนินการก่อน หากพบปัญหาระหว่างการดำเนินการให้สื่อสารและรวบรวมข้อมูลเพื่อทบทวน</div>
+    </div>
+  </section>
+
+  <section class="section" id="checklist">
+    <div class="section-head"><h2>เช็กลิสต์ควบคุมหน้างาน</h2><p>ใช้ตรวจสอบก่อนปิดรอบและก่อนยื่นอุทธรณ์</p></div>
+    <div class="section-body">
+      <div class="check-grid">
+        <div class="check-block"><h3>ก่อนขอรถเสริม</h3><ul><li>ตรวจปริมาณพัสดุของเส้นหลักและจุดพ่วง</li><li>ตรวจอัตราโหลดว่าถึงเกณฑ์ 40% หรือไม่</li><li>บันทึกรูปโหลดและจำนวนพัสดุก่อนส่งคำขอ</li></ul></div>
+        <div class="check-block"><h3>ก่อนปล่อยรถ</h3><ul><li>ตรวจเวลา Standby และเวลาโหลดจริง</li><li>ตรวจว่ารถไม่ออกช้าหรือออกหลัง 12:00 น. โดยไม่มีเหตุรองรับ</li><li>บันทึกข้อมูลกรณีผิดปกติทันที</li></ul></div>
+        <div class="check-block"><h3>ก่อนปิดรอบ</h3><ul><li>ตรวจพัสดุคงคลังที่จุดดรอป</li><li>ตรวจการเคลียร์เครื่องคัดแยก</li><li>ตรวจภาพ CCTV/รูปหน้างานสำหรับเคสเสี่ยง</li></ul></div>
+        <div class="check-block"><h3>ก่อนยื่นอุทธรณ์</h3><ul><li>รวบรวมข้อมูลโหลด, รูปถ่าย, CCTV และเวลาที่เกี่ยวข้อง</li><li>แยกเหตุ Standby ช้าออกจากเหตุหน้างาน</li><li>สรุปข้อมูลส่งผู้ตรวจสอบตามช่องทางที่กำหนด</li></ul></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="footer">จัดทำเป็นไฟล์ HTML เดียว รองรับการเปิดผ่าน GitHub Pages, คอมพิวเตอร์, iPad, แท็บเล็ต และมือถือ</footer>
+<script>
+(function(){
+  const fmt = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
+  function baht(n) {
+    const value = Number.isFinite(n) ? n : 0;
+    return fmt.format(Math.round(value * 100) / 100) + ' บาท';
+  }
+  function calc() {
+    let penalty = 0;
+    let reward = 0;
+    document.querySelectorAll('#calcGrid input').forEach((input) => {
+      const qty = Math.max(0, parseFloat(input.value || '0') || 0);
+      const rate = parseFloat(input.dataset.rate || '0') || 0;
+      const total = qty * rate;
+      if (input.dataset.kind === 'reward') reward += total;
+      else penalty += total;
+    });
+    const net = Math.max(0, penalty - reward);
+    document.getElementById('penaltyTotal').textContent = baht(penalty);
+    document.getElementById('rewardTotal').textContent = baht(reward);
+    document.getElementById('netTotal').textContent = baht(net);
+    document.getElementById('amShare').textContent = baht(net * 0.5);
+    document.getElementById('mgShare').textContent = baht(net * 0.3);
+    document.getElementById('dmShare').textContent = baht(net * 0.2);
+  }
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#calcGrid input').forEach((input) => input.addEventListener('input', calc));
+    calc();
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) printBtn.addEventListener('click', () => window.print());
+    const fullBtn = document.getElementById('fullBtn');
+    if (fullBtn) fullBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+      else if (document.exitFullscreen) document.exitFullscreen();
+    });
+    const shareBtn = document.getElementById('shareBtn');
+    const status = document.getElementById('shareStatus');
+    if (shareBtn) shareBtn.addEventListener('click', async () => {
+      const shareData = { title: document.title, text: 'สรุปนโยบายควบคุมต้นทุนรถและ SLA', url: location.href };
+      try {
+        if (navigator.share && location.protocol.startsWith('http')) await navigator.share(shareData);
+        else await copyText(location.href);
+        if (status) { status.textContent = 'คัดลอกลิงก์แล้ว'; setTimeout(() => status.textContent = '', 2200); }
+      } catch (err) {
+        try { await copyText(document.title); if (status) status.textContent = 'คัดลอกชื่อเอกสารแล้ว'; } catch(e) { if (status) status.textContent = 'แชร์ไม่สำเร็จ'; }
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
