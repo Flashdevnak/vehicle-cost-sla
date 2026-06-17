@@ -190,6 +190,701 @@ li{margin:4px 0}
   .policy-table-wrap{display:block}
   .mobile-policy-list{display:none}
 }
+
+/* ===== White Professional Theme v2 ===== */
+:root{
+  --page:#ffffff;
+  --surface:#ffffff;
+  --surface-2:#f8fafc;
+  --ink:#0f172a;
+  --text:#334155;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --line-2:#eef2f7;
+  --head:#172033;
+  --head-2:#22304a;
+  --accent:#2563eb;
+  --green:#047857;
+  --green-bg:#ecfdf5;
+  --red:#b42318;
+  --red-bg:#fff1f2;
+  --blue-bg:#eff6ff;
+  --warn-bg:#fffbeb;
+}
+html,body{background:#fff!important}
+.topbar{
+  background:rgba(255,255,255,.96)!important;
+  border-bottom:1px solid #e2e8f0!important;
+  backdrop-filter:blur(12px);
+}
+.mark{
+  background:linear-gradient(135deg,#1e40af,#0f766e)!important;
+  border:0!important;
+  border-radius:10px!important;
+}
+.btn{border-radius:9px!important;background:#fff!important;border-color:#e2e8f0!important}
+.btn.main{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important}
+.navline{background:#fff!important;border-bottom:1px solid #eef2f7!important}
+.navline a:hover{background:#f8fafc!important;color:#1e40af!important;border-bottom-color:#2563eb!important}
+.hero{
+  background:linear-gradient(135deg,#ffffff 0%,#ffffff 50%,#f8fbff 100%)!important;
+  color:#0f172a!important;
+  border-bottom:1px solid #e2e8f0!important;
+}
+.hero h1,h1{color:#0f172a!important}
+.hero p{color:#475569!important}
+.kicker span{
+  background:#eff6ff!important;
+  color:#1e40af!important;
+  border:1px solid #dbeafe!important;
+  border-radius:999px!important;
+}
+main{background:#fff!important}
+.section{
+  background:#fff!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:14px!important;
+  box-shadow:none!important;
+  overflow:hidden;
+}
+.section-head{
+  background:linear-gradient(180deg,#ffffff,#fbfdff)!important;
+  border-bottom:1px solid #eef2f7!important;
+}
+.statement{border-left-color:#2563eb!important;background:#fff!important}
+.metric{
+  background:#fff!important;
+  border:1px solid #e2e8f0!important;
+  border-top:4px solid #2563eb!important;
+  border-radius:12px!important;
+}
+.policy-table-wrap{border:1px solid #e2e8f0!important;border-radius:12px!important}
+th{
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border-bottom:1px solid #e2e8f0!important;
+}
+tbody tr:hover{background:#fbfdff!important}
+.number{
+  background:#eaf2ff!important;
+  color:#1d4ed8!important;
+  border-radius:999px!important;
+}
+.amount-tag{border-radius:999px!important}
+.note{
+  background:#fffbeb!important;
+  border:1px solid #fde68a!important;
+  border-left:5px solid #f59e0b!important;
+  border-radius:12px!important;
+}
+.detail-block,.check-block,.role-block,.calc-field{
+  background:#fff!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:12px!important;
+}
+.detail-block{border-top:4px solid #cbd5e1!important}
+.check-block{border-left:5px solid #0f766e!important}
+.role-block{border-top:4px solid #2563eb!important}
+.calc-field input{
+  background:#fff!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:9px!important;
+}
+.calc-field input:focus{outline:none!important;border-color:#93c5fd!important;box-shadow:0 0 0 3px #dbeafe!important}
+.result-box{
+  background:#fff!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:14px!important;
+  overflow:hidden;
+}
+.result-row.net{background:#0f172a!important}
+.split div{background:#f8fafc!important;border-color:#eef2f7!important;border-radius:10px!important}
+.mobile-rule{
+  background:#fff!important;
+  border:1px solid #e2e8f0!important;
+  border-left:5px solid #b42318!important;
+  border-radius:12px!important;
+}
+.mobile-rule.reward{border-left-color:#047857!important}
+.mobile-rule-top span{background:#eaf2ff!important;color:#1d4ed8!important;border-radius:999px!important}
+.footer{color:#64748b!important}
+@media(max-width:767px){
+  body{background:#fff!important}
+  .section{border-radius:0!important;border-left:0!important;border-right:0!important}
+}
+@media print{.section{border-radius:0!important}}
+
+
+/* ===== No Card / Corporate Document Theme ===== */
+:root{
+  --page:#ffffff;
+  --surface:#ffffff;
+  --surface-2:#ffffff;
+  --ink:#111827;
+  --text:#374151;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --line-2:#f1f5f9;
+  --head:#111827;
+  --head-2:#1f2937;
+  --accent:#1d4ed8;
+  --green:#047857;
+  --green-bg:#f0fdf4;
+  --red:#b42318;
+  --red-bg:#fff5f5;
+  --warn-bg:#fffbeb;
+}
+*{box-shadow:none!important}
+html,body{background:#fff!important;color:#374151!important}
+.topbar{
+  background:#fff!important;
+  border-bottom:1px solid #e5e7eb!important;
+  backdrop-filter:none!important;
+}
+.topbar-inner{padding-top:10px!important;padding-bottom:10px!important}
+.mark{
+  background:#111827!important;
+  border:0!important;
+  border-radius:0!important;
+  width:36px!important;
+  height:36px!important;
+}
+.brand b{color:#111827!important}
+.brand span{color:#6b7280!important}
+.btn{
+  border:1px solid #d1d5db!important;
+  border-radius:0!important;
+  background:#fff!important;
+  color:#111827!important;
+}
+.btn.main{
+  background:#111827!important;
+  border-color:#111827!important;
+  color:#fff!important;
+}
+.navline{
+  background:#fff!important;
+  border-bottom:1px solid #e5e7eb!important;
+}
+.navline a{
+  color:#4b5563!important;
+  border-radius:0!important;
+  border-bottom:2px solid transparent!important;
+}
+.navline a:hover{
+  background:#fff!important;
+  color:#111827!important;
+  border-bottom-color:#111827!important;
+}
+.hero{
+  background:#fff!important;
+  color:#111827!important;
+  border-bottom:2px solid #111827!important;
+}
+.hero-inner{padding-top:40px!important;padding-bottom:34px!important}
+.kicker span{
+  background:#fff!important;
+  color:#374151!important;
+  border:1px solid #d1d5db!important;
+  border-radius:0!important;
+  padding:5px 8px!important;
+}
+h1,.hero h1{color:#111827!important}
+.hero p{color:#4b5563!important}
+main{background:#fff!important}
+.section{
+  background:#fff!important;
+  border:0!important;
+  border-radius:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:visible!important;
+}
+.section + .section{border-top:1px solid #e5e7eb!important}
+.section-head{
+  background:#fff!important;
+  border-bottom:1px solid #e5e7eb!important;
+  padding-top:28px!important;
+  padding-bottom:16px!important;
+}
+.section-head h2{color:#111827!important}
+.section-head p{color:#6b7280!important}
+.section-body{background:#fff!important}
+.statement{
+  background:#fff!important;
+  border-left:4px solid #111827!important;
+  color:#111827!important;
+}
+.summary-item{border-bottom:1px solid #e5e7eb!important}
+.metric-grid{
+  border-top:1px solid #e5e7eb!important;
+  border-bottom:1px solid #e5e7eb!important;
+  gap:0!important;
+}
+.metric{
+  background:#fff!important;
+  border:0!important;
+  border-right:1px solid #e5e7eb!important;
+  border-radius:0!important;
+  padding:16px 14px!important;
+}
+.metric:last-child{border-right:0!important}
+.policy-table-wrap{
+  border:0!important;
+  border-radius:0!important;
+  border-top:1px solid #111827!important;
+  border-bottom:1px solid #111827!important;
+}
+table{background:#fff!important}
+th{
+  background:#fff!important;
+  color:#111827!important;
+  border-bottom:1px solid #111827!important;
+  border-right:0!important;
+}
+td{
+  background:#fff!important;
+  border-top:1px solid #e5e7eb!important;
+}
+tbody tr:hover{background:#fff!important}
+.note{
+  background:#fffbeb!important;
+  border:0!important;
+  border-left:4px solid #f59e0b!important;
+  border-radius:0!important;
+}
+.rule-detail{
+  border-top:1px solid #e5e7eb!important;
+  background:#fff!important;
+}
+.rule-detail:first-child{border-top:0!important}
+.number{
+  background:#111827!important;
+  color:#fff!important;
+  border-radius:0!important;
+}
+.amount-tag{
+  background:#fff!important;
+  border-radius:0!important;
+  border:1px solid #d1d5db!important;
+}
+.amount-tag.penalty{
+  background:#fff!important;
+  color:#b42318!important;
+  border-color:#d1d5db!important;
+}
+.amount-tag.reward{
+  background:#fff!important;
+  color:#047857!important;
+  border-color:#d1d5db!important;
+}
+.detail-grid{gap:20px!important}
+.detail-block{
+  background:#fff!important;
+  border:0!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+.detail-block h4{
+  border-bottom:1px solid #e5e7eb!important;
+  padding-bottom:6px!important;
+  margin-bottom:8px!important;
+}
+.calc-field{
+  background:#fff!important;
+  border:0!important;
+  border-left:4px solid #d1d5db!important;
+  border-radius:0!important;
+  padding:10px 0 10px 14px!important;
+}
+.calc-field.penalty{border-left-color:#b42318!important}
+.calc-field.reward{border-left-color:#047857!important}
+.calc-field input{
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #9ca3af!important;
+  border-radius:0!important;
+  padding-left:0!important;
+}
+.calc-field input:focus{
+  outline:none!important;
+  border-color:#111827!important;
+  box-shadow:none!important;
+}
+.result-box{
+  background:#fff!important;
+  border:1px solid #111827!important;
+  border-radius:0!important;
+}
+.result-row{border-bottom:1px solid #e5e7eb!important}
+.result-row.net{background:#111827!important}
+.split{gap:0!important;padding:0!important;border-top:1px solid #e5e7eb!important}
+.split div{
+  background:#fff!important;
+  border:0!important;
+  border-right:1px solid #e5e7eb!important;
+  border-radius:0!important;
+}
+.split div:last-child{border-right:0!important}
+.check-grid,.role-grid{gap:22px!important}
+.check-block,.role-block{
+  background:#fff!important;
+  border:0!important;
+  border-radius:0!important;
+  padding:0 0 0 14px!important;
+}
+.check-block{border-left:4px solid #111827!important}
+.role-block{border-left:4px solid #1d4ed8!important}
+.check-block h3,.role-block h3{
+  border-bottom:1px solid #e5e7eb!important;
+  padding-bottom:6px!important;
+}
+.mobile-rule{
+  background:#fff!important;
+  border:0!important;
+  border-left:4px solid #b42318!important;
+  border-radius:0!important;
+  border-bottom:1px solid #e5e7eb!important;
+  padding:13px 0 13px 12px!important;
+}
+.mobile-rule.reward{border-left-color:#047857!important}
+.mobile-rule-top span{
+  background:#111827!important;
+  color:#fff!important;
+  border-radius:0!important;
+}
+.footer{color:#6b7280!important;border-top:1px solid #e5e7eb!important;padding-top:16px!important}
+@media(max-width:767px){
+  .section{border-left:0!important;border-right:0!important}
+  .section + .section{border-top:1px solid #e5e7eb!important}
+  .metric-grid{border-bottom:0!important}
+  .metric{border-right:0!important;border-bottom:1px solid #e5e7eb!important}
+  .detail-grid{gap:16px!important}
+  .detail-block{padding-bottom:4px!important}
+  .toolbar{grid-template-columns:1fr 1fr!important}
+}
+@media(max-width:390px){.toolbar{grid-template-columns:1fr!important}}
+@media print{
+  .section{border-radius:0!important}
+}
+
+
+/* ===== Clear Section / Professional White Document Theme ===== */
+:root{
+  --page:#ffffff;
+  --surface:#ffffff;
+  --ink:#111827;
+  --text:#374151;
+  --muted:#6b7280;
+  --line:#cbd5e1;
+  --line-2:#e5e7eb;
+  --head:#111827;
+  --accent:#1d4ed8;
+  --accent-soft:#eef4ff;
+  --green:#047857;
+  --green-soft:#edfdf6;
+  --red:#b42318;
+  --red-soft:#fff1f2;
+  --amber:#b45309;
+  --amber-soft:#fffbeb;
+}
+html,body{background:#fff!important;color:#374151!important}
+*{box-shadow:none!important}
+.topbar{
+  background:#fff!important;
+  border-bottom:2px solid #d1d5db!important;
+  backdrop-filter:none!important;
+}
+.mark{
+  background:#111827!important;
+  border-radius:0!important;
+  border:0!important;
+}
+.btn{border-radius:0!important;border:1px solid #9ca3af!important;background:#fff!important}
+.btn.main{background:#111827!important;border-color:#111827!important;color:#fff!important}
+.navline{
+  background:#f8fafc!important;
+  border-bottom:1px solid #cbd5e1!important;
+}
+.navline a:hover{
+  background:#eef2ff!important;
+  border-bottom-color:#1d4ed8!important;
+}
+.hero{
+  background:linear-gradient(90deg,#f8fafc 0%,#ffffff 62%,#eef4ff 100%)!important;
+  color:#111827!important;
+  border-bottom:4px solid #111827!important;
+}
+.hero h1,h1{color:#111827!important}
+.hero p{color:#4b5563!important}
+.kicker span{
+  background:#fff!important;
+  border:1px solid #94a3b8!important;
+  border-radius:0!important;
+  color:#1f2937!important;
+}
+main{background:#fff!important}
+
+/* โครงสร้างหลัก: ไม่ใช่การ์ด แต่เป็น section block แบบรายงาน */
+.section{
+  background:#fff!important;
+  border:0!important;
+  border-radius:0!important;
+  margin:0 0 28px!important;
+  overflow:visible!important;
+}
+.section::before{
+  content:"";
+  display:block;
+  height:6px;
+  background:linear-gradient(90deg,#111827 0 22%,#1d4ed8 22% 58%,#cbd5e1 58% 100%);
+}
+.section-head{
+  background:#f8fafc!important;
+  border:1px solid #cbd5e1!important;
+  border-top:0!important;
+  padding:20px 24px!important;
+}
+.section-head h2{
+  color:#111827!important;
+  padding-left:12px!important;
+  border-left:5px solid #1d4ed8!important;
+}
+.section-head p{color:#4b5563!important;padding-left:17px!important}
+.section-body{
+  border-left:1px solid #cbd5e1!important;
+  border-right:1px solid #cbd5e1!important;
+  border-bottom:1px solid #cbd5e1!important;
+  background:#fff!important;
+  padding:24px!important;
+}
+.statement{
+  background:#f8fafc!important;
+  border-left:6px solid #111827!important;
+  padding:14px 16px!important;
+}
+.summary-item{
+  border-bottom:1px solid #cbd5e1!important;
+  padding-bottom:12px!important;
+}
+.metric-grid{
+  border:1px solid #cbd5e1!important;
+  background:#fff!important;
+  gap:0!important;
+}
+.metric{
+  background:#fff!important;
+  border:0!important;
+  border-right:1px solid #cbd5e1!important;
+  border-radius:0!important;
+  border-top:0!important;
+}
+.metric:last-child{border-right:0!important}
+.metric small{color:#64748b!important}
+.metric strong{color:#111827!important}
+
+/* ตารางให้ชัด แต่ไม่ใช่การ์ด */
+.policy-table-wrap{
+  border:1px solid #94a3b8!important;
+  border-radius:0!important;
+}
+th{
+  background:#111827!important;
+  color:#fff!important;
+  border-right:1px solid #374151!important;
+  border-bottom:0!important;
+}
+td{
+  border-top:1px solid #cbd5e1!important;
+  background:#fff!important;
+}
+tbody tr:nth-child(even) td{background:#f8fafc!important}
+tbody tr:hover td{background:#eef4ff!important}
+
+/* note เป็นแถบแจ้งเตือนเอกสาร */
+.note{
+  background:#fffbeb!important;
+  border:1px solid #f59e0b!important;
+  border-left:6px solid #b45309!important;
+  border-radius:0!important;
+  color:#3f3521!important;
+}
+
+/* รายละเอียดแต่ละหัวข้อ */
+.rule-detail{
+  background:#fff!important;
+  border-left:1px solid #cbd5e1!important;
+  border-right:1px solid #cbd5e1!important;
+  border-bottom:1px solid #cbd5e1!important;
+  border-top:0!important;
+  padding:24px!important;
+}
+.rule-detail + .rule-detail{
+  margin-top:0!important;
+  border-top:1px solid #cbd5e1!important;
+}
+.number{
+  background:#111827!important;
+  color:#fff!important;
+  border-radius:0!important;
+}
+.amount-tag{
+  border-radius:0!important;
+  background:#fff!important;
+  border:1px solid #94a3b8!important;
+}
+.amount-tag.penalty{color:#b42318!important}
+.amount-tag.reward{color:#047857!important}
+.detail-grid{
+  gap:0!important;
+  border:1px solid #cbd5e1!important;
+}
+.detail-block{
+  background:#fff!important;
+  border:0!important;
+  border-right:1px solid #cbd5e1!important;
+  border-radius:0!important;
+  padding:16px!important;
+}
+.detail-block:last-child{border-right:0!important}
+.detail-block h4{
+  margin:0 0 10px!important;
+  padding-bottom:8px!important;
+  border-bottom:2px solid #111827!important;
+}
+
+/* เครื่องคำนวณ */
+.calc-grid{
+  gap:0!important;
+  border-top:1px solid #cbd5e1!important;
+  border-left:1px solid #cbd5e1!important;
+}
+.calc-field{
+  background:#fff!important;
+  border:0!important;
+  border-right:1px solid #cbd5e1!important;
+  border-bottom:1px solid #cbd5e1!important;
+  border-radius:0!important;
+  padding:14px!important;
+}
+.calc-field.penalty{border-left:5px solid #b42318!important}
+.calc-field.reward{border-left:5px solid #047857!important}
+.calc-field input{
+  border:1px solid #94a3b8!important;
+  border-radius:0!important;
+  background:#fff!important;
+}
+.calc-field input:focus{
+  outline:2px solid #bfdbfe!important;
+  outline-offset:0!important;
+  box-shadow:none!important;
+}
+.result-box{
+  border:2px solid #111827!important;
+  border-radius:0!important;
+  background:#fff!important;
+}
+.result-row{border-bottom:1px solid #cbd5e1!important}
+.result-row.net{background:#111827!important}
+.split{gap:0!important;padding:0!important}
+.split div{
+  border:0!important;
+  border-right:1px solid #cbd5e1!important;
+  border-top:1px solid #cbd5e1!important;
+  border-radius:0!important;
+  background:#f8fafc!important;
+}
+.split div:last-child{border-right:0!important}
+
+/* เช็กลิสต์และผู้รับผิดชอบ: ใช้ column divider แทน card */
+.check-grid,.role-grid{
+  gap:0!important;
+  border-top:1px solid #cbd5e1!important;
+  border-left:1px solid #cbd5e1!important;
+}
+.check-block,.role-block{
+  background:#fff!important;
+  border:0!important;
+  border-right:1px solid #cbd5e1!important;
+  border-bottom:1px solid #cbd5e1!important;
+  border-radius:0!important;
+  padding:18px!important;
+}
+.check-block{border-left:5px solid #111827!important}
+.role-block{border-left:5px solid #1d4ed8!important}
+.check-block h3,.role-block h3{
+  border-bottom:2px solid #111827!important;
+  padding-bottom:8px!important;
+}
+
+/* มือถือ: แยกเป็นเส้นแบ่งชัด ไม่ใช่กล่องมน */
+.mobile-rule{
+  background:#fff!important;
+  border:0!important;
+  border-left:5px solid #b42318!important;
+  border-bottom:1px solid #cbd5e1!important;
+  border-radius:0!important;
+  padding:14px 0 14px 14px!important;
+}
+.mobile-rule.reward{border-left-color:#047857!important}
+.mobile-rule-top span{
+  background:#111827!important;
+  color:#fff!important;
+  border-radius:0!important;
+}
+.footer{
+  border-top:2px solid #cbd5e1!important;
+  color:#6b7280!important;
+  padding-top:16px!important;
+}
+@media(max-width:1023px){
+  .detail-grid{border-bottom:0!important}
+  .detail-block{
+    border-right:0!important;
+    border-bottom:1px solid #cbd5e1!important;
+  }
+  .detail-block:last-child{border-bottom:0!important}
+}
+@media(max-width:767px){
+  .section{margin-bottom:22px!important}
+  .section-head{
+    border-left:0!important;
+    border-right:0!important;
+    padding:18px 14px!important;
+  }
+  .section-body{
+    border-left:0!important;
+    border-right:0!important;
+    padding:18px 14px!important;
+  }
+  .metric-grid{
+    border-left:0!important;
+    border-right:0!important;
+    border-bottom:0!important;
+  }
+  .metric{
+    border-right:0!important;
+    border-bottom:1px solid #cbd5e1!important;
+  }
+  .rule-detail{
+    border-left:0!important;
+    border-right:0!important;
+    padding:20px 14px!important;
+  }
+  .calc-grid{
+    border-left:0!important;
+  }
+  .calc-field{
+    border-right:0!important;
+  }
+  .check-grid,.role-grid{
+    border-left:0!important;
+  }
+  .check-block,.role-block{
+    border-right:0!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -197,10 +892,10 @@ li{margin:4px 0}
   <div class="topbar-inner">
     <a class="brand" href="#top" aria-label="กลับด้านบน">
       <div class="mark">SLA</div>
-      <div><b>Vehicle Cost & SLA Control</b><span><b>report</b></span></div>
+      <div><b>Vehicle Cost & SLA Control</b><span>Policy Summary</span></div>
     </a>
     <div class="toolbar">
-      <button class="btn main" id="shareBtn" type="button">แชร์ไฟล์/ลิงก์</button>
+      <button class="btn main" id="shareBtn" type="button">แชร์ลิงก์</button>
       <button class="btn" id="printBtn" type="button">Print / Save PDF</button>
       <button class="btn" id="fullBtn" type="button">เต็มจอ</button>
       <span class="share-status" id="shareStatus" role="status"></span>
@@ -440,7 +1135,7 @@ li{margin:4px 0}
   </section>
 
   <section class="section" id="calculator">
-    <div class="section-head"><h2>เครื่องคำนวณค่าปรับ / รางวัล</h2><p>กรอกจำนวนครั้งหรือจำนวนชิ้น ระบบจะคำนวณยอดรวมและยอดสุทธิทันที</p></div>
+    <div class="section-head"><h2>เครื่องคำนวณค่าปรับ / รางวัล</h2><p>ใช้ประเมินผลกระทบเบื้องต้นจากจำนวนเหตุการณ์หรือจำนวนพัสดุที่เกี่ยวข้อง</p></div>
     <div class="section-body">
       <div class="calc-layout">
         <div class="calc-grid" id="calcGrid">
@@ -510,7 +1205,7 @@ li{margin:4px 0}
     </div>
   </section>
 </main>
-<footer class="footer">จัดทำเป็นไฟล์ HTML เดียว รองรับการเปิดผ่าน GitHub Pages, คอมพิวเตอร์, iPad, แท็บเล็ต และมือถือ</footer>
+<footer class="footer">เอกสารสรุปสำหรับใช้อ้างอิงในการประชุม การสื่อสารหน้างาน และการติดตามผลการดำเนินงาน</footer>
 <script>
 (function(){
   const fmt = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
