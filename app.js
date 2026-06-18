@@ -6,6 +6,7 @@
   const state = {
     routeLimit: ROUTE_PAGE_SIZE,
     routeSearchScope: "origin",
+    vehicleSearchScope: "origin",
     routeTruck: "",
     loadMode: "route"
   };
@@ -30,7 +31,7 @@
     "\"": "&quot;",
     "'": "&#039;"
   }[char]));
-  const norm = (value) => String(value ?? "").toLowerCase().replace(/[_-]/g, " ").replace(/\s+/g, " ").trim();
+  const norm = (value) => String(value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
   const uniq = (items) => [...new Set(items.filter((item) => item !== null && item !== undefined && item !== ""))];
   const optionHtml = (value, label = value) => `<option value="${esc(value)}">${esc(label)}</option>`;
   const isMobile = () => window.matchMedia && window.matchMedia("(max-width: 899px)").matches;
@@ -177,18 +178,34 @@
 
   function renderVehicleCapacity() {
     const { vehicle, trucks } = data();
-    const query = norm($("vcSearchInput")?.value || "");
-    const list = vehicle.filter((row) => {
-      if (!query) return true;
-      return [row.originType, row.destType, row.displayCondition, row.rawCode, ...trucks, ...trucks.map((truck) => row.caps?.[truck])].some((value) => norm(value).includes(query));
-    });
+    const queryText = ($("vcSearchInput")?.value || "").trim();
+    const query = norm(queryText);
+    const list = filteredVehicleCapacity(vehicle, trucks, query);
     if ($("vcCapacityRows")) {
       $("vcCapacityRows").innerHTML = list.length ? list.map((row) => `<tr><td>${esc(row.originType)}</td><td>${esc(row.destType)}</td><td>${esc(row.displayCondition)}</td>${trucks.map((truck) => `<td class="num">${fmt(row.caps?.[truck])}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${trucks.length + 3}" class="vc-empty">ไม่พบข้อมูลตามคำค้นหา</td></tr>`;
     }
     if ($("vcCapacityCards")) {
       $("vcCapacityCards").innerHTML = list.length ? list.map((row) => `<article class="route-card-mini"><div class="route-card-top"><span>${esc(row.destType)}</span><strong>${esc(row.originType)}</strong></div><h3>${esc(row.displayCondition)}</h3><div class="capacity-mini-table"><div class="capacity-mini-head"><div>รถ</div><div>Capacity</div></div>${trucks.map((truck) => `<div class="capacity-mini-row"><div class="truck-name">${esc(truck)}</div><div><span class="cap-value">${fmt(row.caps?.[truck])}</span><span class="cap-unit">ชิ้น</span></div></div>`).join("")}</div></article>`).join("") : '<div class="vc-empty">ไม่พบข้อมูลตามคำค้นหา</div>';
     }
-    if ($("vcResultText")) $("vcResultText").innerHTML = `แสดง <strong>${fmt(list.length)}</strong> จาก ${fmt(vehicle.length)} เงื่อนไข`;
+    const scopeText = vehicleScopeLabel();
+    if ($("vcResultText")) $("vcResultText").innerHTML = `ค้นหา <strong>"${esc(queryText)}"</strong> จาก${scopeText} / พบ <strong>${fmt(list.length)}</strong> เงื่อนไข`;
+  }
+
+  function vehicleScopeLabel() {
+    if (state.vehicleSearchScope === "destination") return "ประเภทปลายทาง";
+    if (state.vehicleSearchScope === "all") return "ทั้งหมด";
+    return "ต้นทาง";
+  }
+
+  function filteredVehicleCapacity(vehicle, trucks, query) {
+    if (!query) return vehicle;
+    return vehicle.filter((row) => {
+      if (state.vehicleSearchScope === "destination") return norm(row.destType).includes(query);
+      if (state.vehicleSearchScope === "all") {
+        return [row.originType, row.destType, row.displayCondition, ...trucks, ...trucks.map((truck) => row.caps?.[truck])].some((value) => norm(value).includes(query));
+      }
+      return norm(row.originType).includes(query);
+    });
   }
 
   function setOptions(select, values, placeholder) {
@@ -425,8 +442,15 @@
     $("vcSearchInput")?.addEventListener("input", renderVehicleCapacity);
     $("vcClearBtn")?.addEventListener("click", () => {
       if ($("vcSearchInput")) $("vcSearchInput").value = "";
+      state.vehicleSearchScope = "origin";
+      document.querySelectorAll("#vehicle-capacity .scope-btn").forEach((item) => item.classList.toggle("active", item.dataset.scope === "origin"));
       renderVehicleCapacity();
     });
+    document.querySelectorAll("#vehicle-capacity .scope-btn").forEach((btn) => btn.addEventListener("click", () => {
+      state.vehicleSearchScope = btn.dataset.scope || "origin";
+      document.querySelectorAll("#vehicle-capacity .scope-btn").forEach((item) => item.classList.toggle("active", item === btn));
+      renderVehicleCapacity();
+    }));
     document.querySelectorAll(".calc-mode").forEach((btn) => btn.addEventListener("click", () => {
       state.loadMode = btn.dataset.mode || "route";
       document.querySelectorAll(".calc-mode").forEach((item) => item.classList.toggle("active", item === btn));
