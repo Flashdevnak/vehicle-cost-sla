@@ -3,67 +3,108 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Vehicle SLA Admin</title>
+  <title>Admin Data Update</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     .admin-shell{max-width:1160px;margin:0 auto;padding:24px 20px 52px}
+    .admin-hero{background:var(--head);color:#fff;padding:28px 24px;margin-bottom:16px}
+    .admin-hero h1{margin:0 0 6px;color:#fff;font-size:32px;letter-spacing:0}
+    .admin-hero p{margin:0;color:#d8e0e6}
     .admin-panel{background:#fff;border:1px solid var(--line);padding:20px;margin-bottom:16px}
-    .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .admin-panel h2{margin:0 0 10px;color:var(--ink);font-size:22px}
+    .admin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+    .admin-actions input{min-height:40px;border:1px solid var(--line);padding:8px 10px}
+    .admin-status{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface-2);padding:8px 10px;color:var(--text);font-size:13px}
+    .admin-status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .admin-status.ok::before{background:var(--green)}
+    .admin-status.blocked::before{background:var(--red)}
+    .uid-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .uid-box code{background:#f3f4f6;border:1px solid #d1d5db;padding:8px 10px;user-select:all}
+    .step-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .step{border:1px solid var(--line-2);padding:12px;background:var(--surface-2)}
+    .step b{display:block;color:var(--ink)}
     .admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
     .admin-metric{border-left:4px solid var(--accent);background:#fbfaf7;padding:12px}
     .admin-metric small{display:block;color:var(--muted)}
-    .admin-metric strong{display:block;color:var(--ink);font-size:22px}
-    .admin-log{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;min-height:90px;overflow:auto}
+    .admin-metric strong{display:block;color:var(--ink);font-size:24px}
+    .validation-list{display:grid;gap:8px;margin-top:10px}
+    .validation-item{border-left:4px solid var(--green);background:#f0fdf4;padding:9px 10px}
+    .validation-item.warn{border-left-color:var(--accent);background:#fff7ed}
+    .validation-item.error{border-left-color:var(--red);background:#fef2f2}
     .admin-table{width:100%;border-collapse:collapse;min-width:900px}
     .admin-table th,.admin-table td{border:1px solid var(--line-2);padding:8px;font-size:13px}
     .admin-table th{background:var(--head);color:#fff}
-    @media(max-width:767px){.admin-grid{grid-template-columns:1fr}.admin-actions .btn{width:100%}}
+    .version-list{display:grid;gap:8px;margin-top:10px}
+    .version-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid var(--line-2);padding:10px;background:var(--surface-2)}
+    .version-item small{display:block;color:var(--muted)}
+    @media(max-width:767px){.admin-grid,.step-grid{grid-template-columns:1fr}.admin-actions .btn,.admin-actions input{width:100%}.version-item{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="index.html"><div class="mark">SLA</div><div><b>Vehicle SLA Admin</b><span>Firebase data upload</span></div></a>
+      <a class="brand" href="index.html"><div class="mark">SLA</div><div><b>Vehicle Cost & SLA Control</b><span>Admin</span></div></a>
       <div class="toolbar"><a class="btn" href="index.html">กลับหน้าเว็บ</a></div>
     </div>
   </header>
 
   <main class="admin-shell">
+    <section class="admin-hero">
+      <h1>Admin Data Update</h1>
+      <p>อัปโหลดไฟล์ Excel ตรวจสอบข้อมูล และเผยแพร่ข้อมูลล่าสุดไปยังหน้าเว็บ</p>
+    </section>
+
     <section class="admin-panel">
-      <h1 style="color:var(--ink);font-size:28px">Admin Upload</h1>
-      <p>เข้าสู่ระบบ ตรวจสิทธิ์จาก Firestore collection <b>admins</b> แล้วอัปโหลด Excel เพื่อ Preview ก่อน Publish</p>
-      <div id="configWarning" class="note"></div>
+      <h2>สถานะระบบ</h2>
+      <span id="setupStatus" class="admin-status">กำลังตรวจสอบการตั้งค่า</span>
+      <div class="step-grid">
+        <div class="step"><b>1. Login</b><span>เข้าสู่ระบบด้วยบัญชีที่ได้รับอนุญาต</span></div>
+        <div class="step"><b>2. Validate</b><span>ตรวจ sheet และโครงสร้างข้อมูล</span></div>
+        <div class="step"><b>3. Preview</b><span>ตรวจจำนวนและตัวอย่างข้อมูล</span></div>
+        <div class="step"><b>4. Publish</b><span>เผยแพร่และบันทึกเวอร์ชัน</span></div>
+      </div>
+    </section>
+
+    <section class="admin-panel">
+      <h2>เข้าสู่ระบบ</h2>
       <div class="admin-actions">
         <button class="btn main" id="googleLogin" type="button">Google Login</button>
-        <input id="emailInput" type="email" placeholder="email">
-        <input id="passwordInput" type="password" placeholder="password">
+        <input id="emailInput" type="email" placeholder="Email">
+        <input id="passwordInput" type="password" placeholder="Password">
         <button class="btn" id="emailLogin" type="button">Email Login</button>
         <button class="btn" id="logoutBtn" type="button">Logout</button>
       </div>
-      <p id="authStatus" class="note">ยังไม่ได้เข้าสู่ระบบ</p>
+      <p id="authStatus" class="admin-status">รอเข้าสู่ระบบ</p>
+      <div class="uid-box" id="uidBox" hidden>
+        <span>UID สำหรับเปิดสิทธิ์ผู้ดูแลระบบ</span>
+        <code id="uidValue"></code>
+        <button class="btn" id="copyUidBtn" type="button">คัดลอก UID</button>
+      </div>
     </section>
 
     <section class="admin-panel" id="uploadPanel" hidden>
-      <h2>Excel Preview</h2>
+      <h2>อัปโหลดและตรวจสอบข้อมูล</h2>
       <input id="excelFile" type="file" accept=".xlsx,.xls">
       <div class="admin-actions">
-        <button class="btn main" id="previewBtn" type="button">Preview</button>
-        <button class="btn" id="publishBtn" type="button" disabled>Publish to Firebase</button>
+        <button class="btn main" id="previewBtn" type="button">Validate & Preview</button>
+        <button class="btn" id="publishBtn" type="button" disabled>Publish</button>
       </div>
+      <div class="validation-list" id="validationList"></div>
       <div class="admin-grid">
         <div class="admin-metric"><small>routeCapacityData</small><strong id="routeRows">0</strong></div>
         <div class="admin-metric"><small>vehicleCapacityData</small><strong id="vehicleRows">0</strong></div>
         <div class="admin-metric"><small>vehicleCapacityTrucks</small><strong id="truckRows">0</strong></div>
         <div class="admin-metric"><small>hubMasterData</small><strong id="hubRows">0</strong></div>
       </div>
-      <h3>Sample route rows</h3>
-      <div class="policy-table-wrap"><table class="admin-table"><thead><tr><th>origin</th><th>destination</th><th>truck</th><th>cap</th><th>capMaster</th><th>capDetail</th><th>status</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
+      <h3>ตัวอย่างข้อมูลเส้นทาง</h3>
+      <div class="policy-table-wrap"><table class="admin-table"><thead><tr><th>origin</th><th>destination</th><th>truck</th><th>cap used</th><th>capMaster</th><th>capDetail</th><th>status</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
     </section>
 
     <section class="admin-panel">
-      <h2>Status</h2>
-      <div class="admin-log" id="logBox">Ready.</div>
+      <h2>Version History</h2>
+      <div id="currentVersion" class="admin-status">ยังไม่มีข้อมูลเวอร์ชันปัจจุบัน</div>
+      <div id="versionList" class="version-list"></div>
     </section>
   </main>
 
@@ -71,14 +112,41 @@
     import { firebaseConfig } from "./firebase-config.js";
 
     const $ = (id) => document.getElementById(id);
-    const log = (message) => { $("logBox").textContent = `${new Date().toLocaleString("th-TH")} ${message}\n` + $("logBox").textContent; };
+    const truckTypes = ["4W", "4WJ", "6W5.5", "6W6.5", "6W7.2", "6W8.8", "10W", "14W", "18W", "22W"];
+    const requiredSheets = ["KPI", "TOTAL", "Detail", "HUB", "Vehicle_capacity"];
     const hasConfig = Object.values(firebaseConfig).every((value) => String(value || "").trim());
-    $("configWarning").textContent = hasConfig ? "Firebase config พร้อมใช้งาน" : "ยังไม่ได้ใส่ Firebase config ใน firebase-config.js";
+    const clean = (value) => String(value ?? "").trim();
+    const norm = (value) => clean(value).toLowerCase().replace(/[_-]/g, " ").replace(/\s+/g, " ");
+    const capacityKey = (originType, destType) => `${norm(originType)}|${norm(destType)}`;
+    const capValue = (value) => {
+      if (value === null || value === undefined || value === "") return null;
+      const n = Number(String(value).replace(/,/g, ""));
+      return Number.isFinite(n) ? n : null;
+    };
+    const threshold = (cap) => ({ load80: Math.ceil(cap * 0.8), load90: Math.ceil(cap * 0.9), load120: Math.ceil(cap * 1.2) });
 
-    let auth, db, storage, user, isAdmin = false, previewData = null, selectedFile = null;
+    let auth, db, storage, user, isAdmin = false, selectedFile = null, previewData = null, validation = { errors: [], warnings: [] };
+
+    function setStatus(el, text, type = "") {
+      el.textContent = text;
+      el.className = `admin-status ${type}`.trim();
+    }
+
+    function renderValidation() {
+      const list = $("validationList");
+      const items = [];
+      validation.errors.forEach((message) => items.push(`<div class="validation-item error">${message}</div>`));
+      validation.warnings.forEach((message) => items.push(`<div class="validation-item warn">${message}</div>`));
+      if (!items.length && previewData) items.push('<div class="validation-item">Validation ผ่าน พร้อมเผยแพร่ข้อมูล</div>');
+      list.innerHTML = items.join("");
+      $("publishBtn").disabled = !isAdmin || !previewData || validation.errors.length > 0;
+    }
 
     async function initFirebase() {
-      if (!hasConfig) return;
+      if (!hasConfig) {
+        setStatus($("setupStatus"), "โหมดเตรียมตั้งค่า: กรุณาเพิ่ม Firebase config ก่อนใช้งานจริง", "blocked");
+        return;
+      }
       const [{ initializeApp }, authMod, fireMod, storageMod] = await Promise.all([
         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
@@ -90,133 +158,172 @@
       db = fireMod.getFirestore(app);
       storage = storageMod.getStorage(app);
       window.firebaseMods = { authMod, fireMod, storageMod };
+      setStatus($("setupStatus"), "ระบบพร้อมใช้งาน", "ok");
       authMod.onAuthStateChanged(auth, async (currentUser) => {
         user = currentUser;
         await checkAdmin();
+        await loadVersions();
       });
     }
 
     async function checkAdmin() {
       if (!user) {
         isAdmin = false;
-        $("authStatus").textContent = "ยังไม่ได้เข้าสู่ระบบ";
+        setStatus($("authStatus"), "รอเข้าสู่ระบบ");
         $("uploadPanel").hidden = true;
+        $("uidBox").hidden = true;
         return;
       }
       const { fireMod } = window.firebaseMods;
       const snap = await fireMod.getDoc(fireMod.doc(db, "admins", user.uid));
       isAdmin = snap.exists() && snap.data().active !== false;
-      $("authStatus").textContent = isAdmin
-        ? `Admin: ${user.email || "-"} / UID: ${user.uid}`
-        : `ผู้ใช้นี้ยังไม่ใช่ admin กรุณาเพิ่ม document admins/${user.uid} และตั้ง active=true`;
-      $("uploadPanel").hidden = !isAdmin;
+      if (isAdmin) {
+        setStatus($("authStatus"), `ผู้ดูแลระบบ: ${user.email || user.uid}`, "ok");
+        $("uploadPanel").hidden = false;
+        $("uidBox").hidden = true;
+      } else {
+        setStatus($("authStatus"), "บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้ดูแลระบบ", "blocked");
+        $("uploadPanel").hidden = true;
+        $("uidBox").hidden = false;
+        $("uidValue").textContent = user.uid;
+      }
+      renderValidation();
     }
 
     $("googleLogin").addEventListener("click", async () => {
-      if (!hasConfig) return log("กรุณาใส่ Firebase config ก่อน");
+      if (!hasConfig) return setStatus($("setupStatus"), "กรุณาเพิ่ม Firebase config ก่อนเข้าสู่ระบบ", "blocked");
       const { authMod } = window.firebaseMods;
       await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider());
     });
     $("emailLogin").addEventListener("click", async () => {
-      if (!hasConfig) return log("กรุณาใส่ Firebase config ก่อน");
+      if (!hasConfig) return setStatus($("setupStatus"), "กรุณาเพิ่ม Firebase config ก่อนเข้าสู่ระบบ", "blocked");
       const { authMod } = window.firebaseMods;
       await authMod.signInWithEmailAndPassword(auth, $("emailInput").value, $("passwordInput").value);
     });
     $("logoutBtn").addEventListener("click", async () => auth && window.firebaseMods.authMod.signOut(auth));
+    $("copyUidBtn").addEventListener("click", async () => navigator.clipboard.writeText($("uidValue").textContent));
     $("excelFile").addEventListener("change", (event) => { selectedFile = event.target.files[0] || null; });
     $("previewBtn").addEventListener("click", previewExcel);
     $("publishBtn").addEventListener("click", publishData);
 
-    const truckTypes = ["4W", "4WJ", "6W5.5", "6W6.5", "6W7.2", "6W8.8", "10W", "14W", "18W", "22W"];
-    const clean = (value) => String(value ?? "").trim();
-    const num = (value) => {
-      const n = Number(String(value ?? "").replace(/,/g, ""));
-      return Number.isFinite(n) ? n : 0;
-    };
-    const t = (cap) => ({ load80: Math.ceil(cap * 0.8), load90: Math.ceil(cap * 0.9), load120: Math.ceil(cap * 1.2) });
-
     function sheetRows(workbook, name) {
       const sheet = workbook.Sheets[name];
-      if (!sheet) throw new Error(`ไม่พบ sheet ${name}`);
+      if (!sheet) return null;
       return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
     }
 
-    function headerIndex(headers, names) {
+    function headerIndex(headers, names, fallback) {
       const lowered = headers.map((h) => clean(h).toLowerCase());
       for (const name of names) {
         const idx = lowered.indexOf(name.toLowerCase());
         if (idx >= 0) return idx;
       }
-      return -1;
+      return fallback;
     }
 
-    function convertWorkbook(workbook) {
-      const vehicleRows = sheetRows(workbook, "Vehicle_capacity");
-      const hubRowsRaw = sheetRows(workbook, "HUB");
-      const detailRows = sheetRows(workbook, "Detail");
-      const hubHeaders = hubRowsRaw[0] || [];
-      const hubNameIdx = headerIndex(hubHeaders, ["name", "HUB", "hub", "origin", "สาขา"]);
-      const branchTypeIdx = headerIndex(hubHeaders, ["branchType", "branch type", "type"]);
-      const hubTypeIdx = headerIndex(hubHeaders, ["hubType", "hub type"]);
-      const hubMasterData = hubRowsRaw.slice(1).map((row) => {
-        const name = clean(row[hubNameIdx >= 0 ? hubNameIdx : 0]);
+    function parseHubRows(rows) {
+      const headers = rows[0] || [];
+      const nameIdx = headerIndex(headers, ["name", "hub", "origin", "สาขา"], 0);
+      const branchTypeIdx = headerIndex(headers, ["branchType", "branch type", "type"], 1);
+      const hubTypeIdx = headerIndex(headers, ["hubType", "hub type"], 2);
+      return rows.slice(1).map((row) => {
+        const name = clean(row[nameIdx]);
         if (!name) return null;
-        const branchType = clean(row[branchTypeIdx >= 0 ? branchTypeIdx : 1]);
-        const hubType = clean(row[hubTypeIdx >= 0 ? hubTypeIdx : 2]);
+        const branchType = clean(row[branchTypeIdx]);
+        const hubType = clean(row[hubTypeIdx]);
         return { name, branchType, hubType, label: `${name} — ${branchType || hubType || "-"}` };
       }).filter(Boolean);
+    }
 
-      const vcHeaders = vehicleRows[0] || [];
-      const originIdx = headerIndex(vcHeaders, ["originType", "origin", "ต้นทาง"]);
-      const destIdx = headerIndex(vcHeaders, ["destType", "destination type", "ปลายทาง"]);
-      const conditionIdx = headerIndex(vcHeaders, ["condition", "เงื่อนไข"]);
-      const vehicleCapacityData = vehicleRows.slice(1).map((row) => {
-        const originType = clean(row[originIdx >= 0 ? originIdx : 0]);
-        const destType = clean(row[destIdx >= 0 ? destIdx : 1]);
-        if (!originType || !destType) return null;
-        const caps = {};
-        truckTypes.forEach((truck) => {
-          const idx = headerIndex(vcHeaders, [truck]);
-          caps[truck] = num(row[idx]);
-        });
-        return { originType, destType, condition: clean(row[conditionIdx]) || `${originType} to ${destType}`, caps };
+    function parseVehicleRows(rows) {
+      return rows.slice(1).map((row, index) => {
+        const originType = clean(row[1]);
+        const destType = clean(row[2]);
+        if (!originType && !destType) return null;
+        const rawCode = clean(row[3]);
+        const caps = {
+          "4W": capValue(row[4]),
+          "4WJ": capValue(row[5]),
+          "6W5.5": capValue(row[6]),
+          "6W6.5": capValue(row[7]),
+          "6W7.2": capValue(row[8]),
+          "6W8.8": capValue(row[9]),
+          "10W": capValue(row[10]),
+          "14W": capValue(row[11]),
+          "18W": capValue(row[12]),
+          "22W": capValue(row[13])
+        };
+        const displayCondition = `${originType} to ${destType}`;
+        return {
+          originType,
+          destType,
+          rawCode,
+          displayCondition,
+          condition: displayCondition,
+          key: capacityKey(originType, destType),
+          caps,
+          sourceRow: index + 2
+        };
       }).filter(Boolean);
+    }
 
-      const hubByName = new Map(hubMasterData.map((hub) => [hub.name, hub]));
+    function validateVehicleRows(rows) {
+      const keys = new Set();
+      rows.forEach((row) => {
+        if (!row.originType) validation.errors.push(`Vehicle_capacity row ${row.sourceRow}: ไม่มี Origin type`);
+        if (!row.destType) validation.errors.push(`Vehicle_capacity row ${row.sourceRow}: ไม่มี Dest type`);
+        const capKeys = Object.keys(row.caps);
+        const exact = truckTypes.length === capKeys.length && truckTypes.every((truck) => capKeys.includes(truck));
+        if (!exact) validation.errors.push(`Vehicle_capacity row ${row.sourceRow}: truck keys ไม่ครบตามลำดับมาตรฐาน`);
+        if (keys.has(row.key)) validation.warnings.push(`Vehicle_capacity row ${row.sourceRow}: พบคู่ origin/dest ซ้ำ ${row.displayCondition}`);
+        keys.add(row.key);
+        if (row.rawCode && row.rawCode !== row.displayCondition) {
+          validation.warnings.push(`Vehicle_capacity row ${row.sourceRow}: Code ไม่ตรงกับคู่จริง จะแสดง ${row.displayCondition}`);
+        }
+      });
+    }
+
+    function parseDetailRows(rows) {
       const detailMap = new Map();
-      detailRows.slice(1).forEach((row) => {
+      rows.slice(1).forEach((row) => {
         const origin = clean(row[9]);
         const destination = clean(row[10]);
         const truck = clean(row[15]);
-        const capDetail = num(row[22]);
-        if (origin && destination && truck && capDetail) detailMap.set(`${origin}|||${destination}|||${truck}`, capDetail);
+        const capDetail = capValue(row[22]);
+        if (origin && destination && truck && capDetail !== null) {
+          detailMap.set(`${origin}|||${destination}|||${truck}`, capDetail);
+        }
       });
+      return detailMap;
+    }
 
+    function mergeRouteCapacity(vehicleCapacityData, hubMasterData, detailMap) {
+      const centralByKey = new Map(vehicleCapacityData.map((row) => [row.key, row]));
+      const hubByName = new Map(hubMasterData.map((hub) => [hub.name, hub]));
       const routeMap = new Map();
       hubMasterData.forEach((originHub) => {
         hubMasterData.forEach((destHub) => {
-          const central = vehicleCapacityData.find((row) => row.originType === originHub.name && row.destType === destHub.branchType);
+          const central = centralByKey.get(capacityKey(originHub.name, destHub.branchType));
           if (!central) return;
           truckTypes.forEach((truck) => {
-            const capMaster = num(central.caps[truck]);
-            if (!capMaster) return;
+            const capMaster = central.caps[truck];
+            if (capMaster === null) return;
             const key = `${originHub.name}|||${destHub.name}|||${truck}`;
-            const capDetail = detailMap.get(key) || null;
-            const cap = capMaster;
+            const capDetail = detailMap.get(key) ?? null;
             routeMap.set(key, {
               origin: originHub.name,
               destination: destHub.name,
               truck,
-              cap,
+              cap: capMaster,
               capMaster,
               capDetail,
-              ...t(cap),
+              ...threshold(capMaster),
               originBranchType: originHub.branchType,
               originHubType: originHub.hubType,
               destType: destHub.branchType,
               destHubType: destHub.hubType,
               source: "กลาง+HUB",
-              status: capDetail ? "มีทั้งกลางและ Detail" : "ค่ากลาง",
+              status: capDetail === null ? "ค่ากลาง" : "มีทั้งกลางและ Detail",
               detailOnly: false
             });
           });
@@ -234,7 +341,7 @@
           cap: capDetail,
           capMaster: null,
           capDetail,
-          ...t(capDetail),
+          ...threshold(capDetail),
           originBranchType: originHub.branchType || "",
           originHubType: originHub.hubType || "",
           destType: destHub.branchType || "",
@@ -244,8 +351,22 @@
           detailOnly: true
         });
       });
+      return [...routeMap.values()];
+    }
+
+    function convertWorkbook(workbook) {
+      validation = { errors: [], warnings: [] };
+      requiredSheets.forEach((name) => {
+        if (!workbook.Sheets[name]) validation.errors.push(`ไม่พบ sheet ${name}`);
+      });
+      if (validation.errors.length) return null;
+      const hubMasterData = parseHubRows(sheetRows(workbook, "HUB"));
+      const vehicleCapacityData = parseVehicleRows(sheetRows(workbook, "Vehicle_capacity"));
+      validateVehicleRows(vehicleCapacityData);
+      const detailMap = parseDetailRows(sheetRows(workbook, "Detail"));
+      const routeCapacityData = mergeRouteCapacity(vehicleCapacityData, hubMasterData, detailMap);
       return {
-        routeCapacityData: [...routeMap.values()],
+        routeCapacityData,
         vehicleCapacityData,
         vehicleCapacityTrucks: truckTypes,
         hubMasterData
@@ -253,52 +374,88 @@
     }
 
     async function previewExcel() {
-      if (!selectedFile) return log("กรุณาเลือกไฟล์ Excel");
-      const buffer = await selectedFile.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array" });
+      if (!selectedFile) {
+        validation = { errors: ["กรุณาเลือกไฟล์ Excel"], warnings: [] };
+        previewData = null;
+        renderValidation();
+        return;
+      }
+      const workbook = XLSX.read(await selectedFile.arrayBuffer(), { type: "array" });
       previewData = convertWorkbook(workbook);
-      $("routeRows").textContent = previewData.routeCapacityData.length.toLocaleString("th-TH");
-      $("vehicleRows").textContent = previewData.vehicleCapacityData.length.toLocaleString("th-TH");
-      $("truckRows").textContent = previewData.vehicleCapacityTrucks.length.toLocaleString("th-TH");
-      $("hubRows").textContent = previewData.hubMasterData.length.toLocaleString("th-TH");
-      $("sampleRows").innerHTML = previewData.routeCapacityData.slice(0, 10).map((row) => `<tr><td>${row.origin}</td><td>${row.destination}</td><td>${row.truck}</td><td>${row.cap}</td><td>${row.capMaster ?? "-"}</td><td>${row.capDetail ?? "-"}</td><td>${row.status}</td></tr>`).join("");
-      $("publishBtn").disabled = false;
-      log("Preview สำเร็จ");
+      $("routeRows").textContent = (previewData?.routeCapacityData.length || 0).toLocaleString("th-TH");
+      $("vehicleRows").textContent = (previewData?.vehicleCapacityData.length || 0).toLocaleString("th-TH");
+      $("truckRows").textContent = (previewData?.vehicleCapacityTrucks.length || 0).toLocaleString("th-TH");
+      $("hubRows").textContent = (previewData?.hubMasterData.length || 0).toLocaleString("th-TH");
+      $("sampleRows").innerHTML = previewData ? previewData.routeCapacityData.slice(0, 10).map((row) => `<tr><td>${row.origin}</td><td>${row.destination}</td><td>${row.truck}</td><td>${row.cap}</td><td>${row.capMaster ?? "-"}</td><td>${row.capDetail ?? "-"}</td><td>${row.status}</td></tr>`).join("") : "";
+      renderValidation();
     }
 
     async function publishData() {
-      if (!isAdmin || !previewData || !selectedFile) return log("ยังไม่มีสิทธิ์หรือยังไม่ได้ Preview");
+      if (!isAdmin || !previewData || !selectedFile || validation.errors.length) return;
       const { fireMod, storageMod } = window.firebaseMods;
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const safeName = selectedFile.name.replace(/[^\w.\-ก-๙]+/g, "_");
-      const excelPath = `uploads/excel/${timestamp}-${safeName}`;
-      const dataPath = "public/data.json";
-      const backupPath = `backup/data-${timestamp}.json`;
+      const versionId = `v-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+      const sourcePath = `uploads/${versionId}/source.xlsx`;
+      const dataPath = `uploads/${versionId}/normalized-data.json`;
       const payload = {
         ...previewData,
         updatedAt: new Date().toISOString(),
         uploadedByUid: user.uid,
         uploadedByEmail: user.email || ""
       };
-      const json = JSON.stringify(payload);
-      await storageMod.uploadBytes(storageMod.ref(storage, excelPath), selectedFile);
-      await storageMod.uploadString(storageMod.ref(storage, dataPath), json, "raw", { contentType: "application/json" });
-      await storageMod.uploadString(storageMod.ref(storage, backupPath), json, "raw", { contentType: "application/json" });
-      await fireMod.addDoc(fireMod.collection(db, "dataVersions"), {
+      await storageMod.uploadBytes(storageMod.ref(storage, sourcePath), selectedFile);
+      await storageMod.uploadString(storageMod.ref(storage, dataPath), JSON.stringify(payload), "raw", { contentType: "application/json" });
+      const metadata = {
+        versionId,
         updatedAt: fireMod.serverTimestamp(),
         uploadedByUid: user.uid,
         uploadedByEmail: user.email || "",
-        excelPath,
+        sourcePath,
         dataPath,
-        backupPath,
         routeRows: previewData.routeCapacityData.length,
         vehicleRows: previewData.vehicleCapacityData.length,
         hubRows: previewData.hubMasterData.length
-      });
-      log("Publish สำเร็จ");
+      };
+      await fireMod.setDoc(fireMod.doc(db, "site_versions", versionId), metadata);
+      await fireMod.setDoc(fireMod.doc(db, "site_current", "current"), metadata);
+      setStatus($("setupStatus"), "เผยแพร่ข้อมูลสำเร็จ", "ok");
+      await loadVersions();
     }
 
-    initFirebase().catch((error) => log(`Firebase init error: ${error.message}`));
+    async function loadVersions() {
+      if (!hasConfig || !window.firebaseMods) return;
+      const { fireMod } = window.firebaseMods;
+      const currentSnap = await fireMod.getDoc(fireMod.doc(db, "site_current", "current"));
+      if (currentSnap.exists()) {
+        const current = currentSnap.data();
+        const date = current.updatedAt?.toDate?.().toLocaleString("th-TH") || "-";
+        setStatus($("currentVersion"), `เวอร์ชันปัจจุบัน: ${current.versionId || "-"} / ${date}`, "ok");
+      }
+      const q = fireMod.query(fireMod.collection(db, "site_versions"), fireMod.orderBy("updatedAt", "desc"), fireMod.limit(10));
+      const snap = await fireMod.getDocs(q);
+      $("versionList").innerHTML = snap.docs.map((docSnap) => {
+        const row = docSnap.data();
+        const date = row.updatedAt?.toDate?.().toLocaleString("th-TH") || "-";
+        return `<div class="version-item"><div><b>${row.versionId || docSnap.id}</b><small>${date} โดย ${row.uploadedByEmail || "-"} / route ${row.routeRows || 0} / vehicle ${row.vehicleRows || 0}</small></div><button class="btn rollback-btn" data-version="${docSnap.id}" type="button">Rollback</button></div>`;
+      }).join("");
+      document.querySelectorAll(".rollback-btn").forEach((btn) => btn.addEventListener("click", () => rollbackVersion(btn.dataset.version)));
+    }
+
+    async function rollbackVersion(versionId) {
+      if (!isAdmin) return;
+      const { fireMod } = window.firebaseMods;
+      const snap = await fireMod.getDoc(fireMod.doc(db, "site_versions", versionId));
+      if (!snap.exists()) return;
+      await fireMod.setDoc(fireMod.doc(db, "site_current", "current"), {
+        ...snap.data(),
+        rolledBackAt: fireMod.serverTimestamp(),
+        rolledBackByUid: user.uid,
+        rolledBackByEmail: user.email || ""
+      });
+      setStatus($("setupStatus"), "Rollback สำเร็จ", "ok");
+      await loadVersions();
+    }
+
+    initFirebase().catch((error) => setStatus($("setupStatus"), `ไม่สามารถเริ่มระบบได้: ${error.message}`, "blocked"));
   </script>
 </body>
 </html>

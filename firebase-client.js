@@ -1,18 +1,23 @@
 import { firebaseConfig } from "./firebase-config.js";
 
-const status = (message) => {
-  if (window.VehicleSLA?.setFirebaseStatus) window.VehicleSLA.setFirebaseStatus(message);
-  else {
-    const el = document.getElementById("firebaseStatus");
-    if (el) el.textContent = message;
-  }
-};
-
 const hasConfig = Object.values(firebaseConfig).every((value) => String(value || "").trim());
+
+function showPublicStatus(message) {
+  if (!message) return;
+  let wrap = document.getElementById("publicDataStatus");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "publicDataStatus";
+    wrap.className = "public-data-status";
+    const main = document.querySelector("main");
+    if (main) main.insertAdjacentElement("beforebegin", wrap);
+  }
+  wrap.textContent = message;
+}
 
 function applyData(payload) {
   if (!payload || !Array.isArray(payload.routeCapacityData) || !Array.isArray(payload.vehicleCapacityData)) {
-    throw new Error("Invalid Firebase data payload");
+    throw new Error("Invalid published data payload");
   }
   window.routeCapacityData = payload.routeCapacityData;
   window.vehicleCapacityData = payload.vehicleCapacityData;
@@ -27,31 +32,36 @@ function applyData(payload) {
 }
 
 async function loadFirebaseData() {
-  if (!hasConfig) {
-    status("ใช้ข้อมูล fallback จาก data.js");
-    return;
-  }
+  if (!hasConfig) return;
 
   try {
-    const [{ initializeApp }, { getStorage, ref, getDownloadURL }] = await Promise.all([
+    const [{ initializeApp }, fireMod, storageMod] = await Promise.all([
       import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
       import("https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js")
     ]);
     const app = initializeApp(firebaseConfig);
-    const storage = getStorage(app);
-    const url = await getDownloadURL(ref(storage, "public/data.json"));
+    const db = fireMod.getFirestore(app);
+    const storage = storageMod.getStorage(app);
+    const currentSnap = await fireMod.getDoc(fireMod.doc(db, "site_current", "current"));
+    if (!currentSnap.exists()) {
+      window.VehicleSLA?.refreshAll?.();
+      return;
+    }
+    const current = currentSnap.data();
+    const dataPath = current.dataPath || current.normalizedDataPath || current.storagePath;
+    if (!dataPath) throw new Error("Current version has no data path");
+    const url = await storageMod.getDownloadURL(storageMod.ref(storage, dataPath));
     const payload = await fetch(url, { cache: "no-store" }).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     });
     applyData(payload);
-    const date = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString("th-TH") : new Date().toLocaleString("th-TH");
-    const email = payload.uploadedByEmail || "unknown";
-    status(`โหลดข้อมูลล่าสุดจาก Firebase แล้ว: ${date} โดย ${email}`);
+    const updatedAt = current.updatedAt?.toDate?.() || payload.updatedAt || current.publishedAt?.toDate?.();
+    if (updatedAt) showPublicStatus(`อัปเดตข้อมูลล่าสุด: ${new Date(updatedAt).toLocaleString("th-TH")}`);
     window.VehicleSLA?.refreshAll?.();
   } catch (error) {
-    console.warn("Firebase data unavailable, using fallback data.js", error);
-    status("ใช้ข้อมูล fallback จาก data.js");
+    console.warn("Published data is unavailable; using bundled data.", error);
     window.VehicleSLA?.refreshAll?.();
   }
 }

@@ -2,6 +2,7 @@
   const ROUTE_PAGE_SIZE = 250;
   const MOBILE_ROUTE_PAGE_SIZE = 80;
   const SHOW_ALL_LIMIT = 1000;
+  const TRUCK_ORDER = ["4W", "4WJ", "6W5.5", "6W6.5", "6W7.2", "6W8.8", "10W", "14W", "18W", "22W"];
   const state = {
     routeLimit: ROUTE_PAGE_SIZE,
     routeSearchScope: "origin",
@@ -13,7 +14,7 @@
   const data = () => ({
     routes: window.routeCapacityData || [],
     vehicle: window.vehicleCapacityData || [],
-    trucks: window.vehicleCapacityTrucks || [],
+    trucks: TRUCK_ORDER,
     hubs: window.hubMasterData || []
   });
   const fmt = (value, digits = 0) => {
@@ -34,6 +35,47 @@
   const optionHtml = (value, label = value) => `<option value="${esc(value)}">${esc(label)}</option>`;
   const isMobile = () => window.matchMedia && window.matchMedia("(max-width: 899px)").matches;
   const pageSize = () => isMobile() ? MOBILE_ROUTE_PAGE_SIZE : ROUTE_PAGE_SIZE;
+
+  function capacityKey(originType, destType) {
+    return `${norm(originType)}|${norm(destType)}`;
+  }
+
+  function normalizeCap(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(String(value).replace(/,/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function normalizeVehicleRow(row) {
+    const originType = String(row?.originType ?? "").trim();
+    const destType = String(row?.destType ?? "").trim();
+    const caps = {};
+    TRUCK_ORDER.forEach((truck) => {
+      caps[truck] = normalizeCap(row?.caps?.[truck]);
+    });
+    const displayCondition = `${originType} to ${destType}`;
+    return {
+      ...row,
+      originType,
+      destType,
+      rawCode: row?.rawCode ?? row?.code ?? row?.condition ?? "",
+      displayCondition,
+      condition: displayCondition,
+      key: row?.key || capacityKey(originType, destType),
+      caps
+    };
+  }
+
+  function normalizeAllData() {
+    window.vehicleCapacityData = (window.vehicleCapacityData || []).map(normalizeVehicleRow);
+    window.vehicleCapacityTrucks = TRUCK_ORDER.slice();
+    window.VEHICLE_SLA_DATA = {
+      routeCapacityData: window.routeCapacityData || [],
+      vehicleCapacityData: window.vehicleCapacityData,
+      vehicleCapacityTrucks: window.vehicleCapacityTrucks,
+      hubMasterData: window.hubMasterData || []
+    };
+  }
 
   function statusLabel(row) {
     return row.status || row.source || "-";
@@ -138,13 +180,13 @@
     const query = norm($("vcSearchInput")?.value || "");
     const list = vehicle.filter((row) => {
       if (!query) return true;
-      return [row.originType, row.destType, row.condition, ...trucks, ...trucks.map((truck) => row.caps?.[truck])].some((value) => norm(value).includes(query));
+      return [row.originType, row.destType, row.displayCondition, row.rawCode, ...trucks, ...trucks.map((truck) => row.caps?.[truck])].some((value) => norm(value).includes(query));
     });
     if ($("vcCapacityRows")) {
-      $("vcCapacityRows").innerHTML = list.length ? list.map((row) => `<tr><td>${esc(row.originType)}</td><td>${esc(row.destType)}</td><td>${esc(row.condition)}</td>${trucks.map((truck) => `<td class="num">${fmt(row.caps?.[truck] ?? 0)}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${trucks.length + 3}" class="vc-empty">ไม่พบข้อมูลตามคำค้นหา</td></tr>`;
+      $("vcCapacityRows").innerHTML = list.length ? list.map((row) => `<tr><td>${esc(row.originType)}</td><td>${esc(row.destType)}</td><td>${esc(row.displayCondition)}</td>${trucks.map((truck) => `<td class="num">${fmt(row.caps?.[truck])}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${trucks.length + 3}" class="vc-empty">ไม่พบข้อมูลตามคำค้นหา</td></tr>`;
     }
     if ($("vcCapacityCards")) {
-      $("vcCapacityCards").innerHTML = list.length ? list.map((row) => `<article class="route-card-mini"><div class="route-card-top"><span>${esc(row.destType)}</span><strong>${esc(row.originType)}</strong></div><h3>${esc(row.condition)}</h3><div class="capacity-mini-table"><div class="capacity-mini-head"><div>รถ</div><div>Capacity</div></div>${trucks.map((truck) => `<div class="capacity-mini-row"><div class="truck-name">${esc(truck)}</div><div><span class="cap-value">${fmt(row.caps?.[truck] ?? 0)}</span><span class="cap-unit">ชิ้น</span></div></div>`).join("")}</div></article>`).join("") : '<div class="vc-empty">ไม่พบข้อมูลตามคำค้นหา</div>';
+      $("vcCapacityCards").innerHTML = list.length ? list.map((row) => `<article class="route-card-mini"><div class="route-card-top"><span>${esc(row.destType)}</span><strong>${esc(row.originType)}</strong></div><h3>${esc(row.displayCondition)}</h3><div class="capacity-mini-table"><div class="capacity-mini-head"><div>รถ</div><div>Capacity</div></div>${trucks.map((truck) => `<div class="capacity-mini-row"><div class="truck-name">${esc(truck)}</div><div><span class="cap-value">${fmt(row.caps?.[truck])}</span><span class="cap-unit">ชิ้น</span></div></div>`).join("")}</div></article>`).join("") : '<div class="vc-empty">ไม่พบข้อมูลตามคำค้นหา</div>';
     }
     if ($("vcResultText")) $("vcResultText").innerHTML = `แสดง <strong>${fmt(list.length)}</strong> จาก ${fmt(vehicle.length)} เงื่อนไข`;
   }
@@ -255,7 +297,7 @@
           ...info,
           origin: selected.row.originType,
           destination: selected.row.destType,
-          condition: selected.row.condition,
+          condition: selected.row.displayCondition,
           destType: selected.row.destType,
           truck: selected.truck,
           source: "vehicleCapacityData",
@@ -419,6 +461,7 @@
   }
 
   function refreshAll() {
+    normalizeAllData();
     renderOverviewCounts();
     renderRoutes(true);
     renderVehicleCapacity();
