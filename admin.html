@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vehicle SLA Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    .admin-shell{max-width:1160px;margin:0 auto;padding:24px 20px 52px}
+    .admin-panel{background:#fff;border:1px solid var(--line);padding:20px;margin-bottom:16px}
+    .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .admin-metric{border-left:4px solid var(--accent);background:#fbfaf7;padding:12px}
+    .admin-metric small{display:block;color:var(--muted)}
+    .admin-metric strong{display:block;color:var(--ink);font-size:22px}
+    .admin-log{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;min-height:90px;overflow:auto}
+    .admin-table{width:100%;border-collapse:collapse;min-width:900px}
+    .admin-table th,.admin-table td{border:1px solid var(--line-2);padding:8px;font-size:13px}
+    .admin-table th{background:var(--head);color:#fff}
+    @media(max-width:767px){.admin-grid{grid-template-columns:1fr}.admin-actions .btn{width:100%}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><div class="mark">SLA</div><div><b>Vehicle SLA Admin</b><span>Firebase data upload</span></div></a>
+      <div class="toolbar"><a class="btn" href="index.html">กลับหน้าเว็บ</a></div>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+    <section class="admin-panel">
+      <h1 style="color:var(--ink);font-size:28px">Admin Upload</h1>
+      <p>เข้าสู่ระบบ ตรวจสิทธิ์จาก Firestore collection <b>admins</b> แล้วอัปโหลด Excel เพื่อ Preview ก่อน Publish</p>
+      <div id="configWarning" class="note"></div>
+      <div class="admin-actions">
+        <button class="btn main" id="googleLogin" type="button">Google Login</button>
+        <input id="emailInput" type="email" placeholder="email">
+        <input id="passwordInput" type="password" placeholder="password">
+        <button class="btn" id="emailLogin" type="button">Email Login</button>
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+      </div>
+      <p id="authStatus" class="note">ยังไม่ได้เข้าสู่ระบบ</p>
+    </section>
+
+    <section class="admin-panel" id="uploadPanel" hidden>
+      <h2>Excel Preview</h2>
+      <input id="excelFile" type="file" accept=".xlsx,.xls">
+      <div class="admin-actions">
+        <button class="btn main" id="previewBtn" type="button">Preview</button>
+        <button class="btn" id="publishBtn" type="button" disabled>Publish to Firebase</button>
+      </div>
+      <div class="admin-grid">
+        <div class="admin-metric"><small>routeCapacityData</small><strong id="routeRows">0</strong></div>
+        <div class="admin-metric"><small>vehicleCapacityData</small><strong id="vehicleRows">0</strong></div>
+        <div class="admin-metric"><small>vehicleCapacityTrucks</small><strong id="truckRows">0</strong></div>
+        <div class="admin-metric"><small>hubMasterData</small><strong id="hubRows">0</strong></div>
+      </div>
+      <h3>Sample route rows</h3>
+      <div class="policy-table-wrap"><table class="admin-table"><thead><tr><th>origin</th><th>destination</th><th>truck</th><th>cap</th><th>capMaster</th><th>capDetail</th><th>status</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
+    </section>
+
+    <section class="admin-panel">
+      <h2>Status</h2>
+      <div class="admin-log" id="logBox">Ready.</div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { firebaseConfig } from "./firebase-config.js";
+
+    const $ = (id) => document.getElementById(id);
+    const log = (message) => { $("logBox").textContent = `${new Date().toLocaleString("th-TH")} ${message}\n` + $("logBox").textContent; };
+    const hasConfig = Object.values(firebaseConfig).every((value) => String(value || "").trim());
+    $("configWarning").textContent = hasConfig ? "Firebase config พร้อมใช้งาน" : "ยังไม่ได้ใส่ Firebase config ใน firebase-config.js";
+
+    let auth, db, storage, user, isAdmin = false, previewData = null, selectedFile = null;
+
+    async function initFirebase() {
+      if (!hasConfig) return;
+      const [{ initializeApp }, authMod, fireMod, storageMod] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
+        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
+        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js")
+      ]);
+      const app = initializeApp(firebaseConfig);
+      auth = authMod.getAuth(app);
+      db = fireMod.getFirestore(app);
+      storage = storageMod.getStorage(app);
+      window.firebaseMods = { authMod, fireMod, storageMod };
+      authMod.onAuthStateChanged(auth, async (currentUser) => {
+        user = currentUser;
+        await checkAdmin();
+      });
+    }
+
+    async function checkAdmin() {
+      if (!user) {
+        isAdmin = false;
+        $("authStatus").textContent = "ยังไม่ได้เข้าสู่ระบบ";
+        $("uploadPanel").hidden = true;
+        return;
+      }
+      const { fireMod } = window.firebaseMods;
+      const snap = await fireMod.getDoc(fireMod.doc(db, "admins", user.uid));
+      isAdmin = snap.exists() && snap.data().active !== false;
+      $("authStatus").textContent = isAdmin
+        ? `Admin: ${user.email || "-"} / UID: ${user.uid}`
+        : `ผู้ใช้นี้ยังไม่ใช่ admin กรุณาเพิ่ม document admins/${user.uid} และตั้ง active=true`;
+      $("uploadPanel").hidden = !isAdmin;
+    }
+
+    $("googleLogin").addEventListener("click", async () => {
+      if (!hasConfig) return log("กรุณาใส่ Firebase config ก่อน");
+      const { authMod } = window.firebaseMods;
+      await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider());
+    });
+    $("emailLogin").addEventListener("click", async () => {
+      if (!hasConfig) return log("กรุณาใส่ Firebase config ก่อน");
+      const { authMod } = window.firebaseMods;
+      await authMod.signInWithEmailAndPassword(auth, $("emailInput").value, $("passwordInput").value);
+    });
+    $("logoutBtn").addEventListener("click", async () => auth && window.firebaseMods.authMod.signOut(auth));
+    $("excelFile").addEventListener("change", (event) => { selectedFile = event.target.files[0] || null; });
+    $("previewBtn").addEventListener("click", previewExcel);
+    $("publishBtn").addEventListener("click", publishData);
+
+    const truckTypes = ["4W", "4WJ", "6W5.5", "6W6.5", "6W7.2", "6W8.8", "10W", "14W", "18W", "22W"];
+    const clean = (value) => String(value ?? "").trim();
+    const num = (value) => {
+      const n = Number(String(value ?? "").replace(/,/g, ""));
+      return Number.isFinite(n) ? n : 0;
+    };
+    const t = (cap) => ({ load80: Math.ceil(cap * 0.8), load90: Math.ceil(cap * 0.9), load120: Math.ceil(cap * 1.2) });
+
+    function sheetRows(workbook, name) {
+      const sheet = workbook.Sheets[name];
+      if (!sheet) throw new Error(`ไม่พบ sheet ${name}`);
+      return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    }
+
+    function headerIndex(headers, names) {
+      const lowered = headers.map((h) => clean(h).toLowerCase());
+      for (const name of names) {
+        const idx = lowered.indexOf(name.toLowerCase());
+        if (idx >= 0) return idx;
+      }
+      return -1;
+    }
+
+    function convertWorkbook(workbook) {
+      const vehicleRows = sheetRows(workbook, "Vehicle_capacity");
+      const hubRowsRaw = sheetRows(workbook, "HUB");
+      const detailRows = sheetRows(workbook, "Detail");
+      const hubHeaders = hubRowsRaw[0] || [];
+      const hubNameIdx = headerIndex(hubHeaders, ["name", "HUB", "hub", "origin", "สาขา"]);
+      const branchTypeIdx = headerIndex(hubHeaders, ["branchType", "branch type", "type"]);
+      const hubTypeIdx = headerIndex(hubHeaders, ["hubType", "hub type"]);
+      const hubMasterData = hubRowsRaw.slice(1).map((row) => {
+        const name = clean(row[hubNameIdx >= 0 ? hubNameIdx : 0]);
+        if (!name) return null;
+        const branchType = clean(row[branchTypeIdx >= 0 ? branchTypeIdx : 1]);
+        const hubType = clean(row[hubTypeIdx >= 0 ? hubTypeIdx : 2]);
+        return { name, branchType, hubType, label: `${name} — ${branchType || hubType || "-"}` };
+      }).filter(Boolean);
+
+      const vcHeaders = vehicleRows[0] || [];
+      const originIdx = headerIndex(vcHeaders, ["originType", "origin", "ต้นทาง"]);
+      const destIdx = headerIndex(vcHeaders, ["destType", "destination type", "ปลายทาง"]);
+      const conditionIdx = headerIndex(vcHeaders, ["condition", "เงื่อนไข"]);
+      const vehicleCapacityData = vehicleRows.slice(1).map((row) => {
+        const originType = clean(row[originIdx >= 0 ? originIdx : 0]);
+        const destType = clean(row[destIdx >= 0 ? destIdx : 1]);
+        if (!originType || !destType) return null;
+        const caps = {};
+        truckTypes.forEach((truck) => {
+          const idx = headerIndex(vcHeaders, [truck]);
+          caps[truck] = num(row[idx]);
+        });
+        return { originType, destType, condition: clean(row[conditionIdx]) || `${originType} to ${destType}`, caps };
+      }).filter(Boolean);
+
+      const hubByName = new Map(hubMasterData.map((hub) => [hub.name, hub]));
+      const detailMap = new Map();
+      detailRows.slice(1).forEach((row) => {
+        const origin = clean(row[9]);
+        const destination = clean(row[10]);
+        const truck = clean(row[15]);
+        const capDetail = num(row[22]);
+        if (origin && destination && truck && capDetail) detailMap.set(`${origin}|||${destination}|||${truck}`, capDetail);
+      });
+
+      const routeMap = new Map();
+      hubMasterData.forEach((originHub) => {
+        hubMasterData.forEach((destHub) => {
+          const central = vehicleCapacityData.find((row) => row.originType === originHub.name && row.destType === destHub.branchType);
+          if (!central) return;
+          truckTypes.forEach((truck) => {
+            const capMaster = num(central.caps[truck]);
+            if (!capMaster) return;
+            const key = `${originHub.name}|||${destHub.name}|||${truck}`;
+            const capDetail = detailMap.get(key) || null;
+            const cap = capMaster;
+            routeMap.set(key, {
+              origin: originHub.name,
+              destination: destHub.name,
+              truck,
+              cap,
+              capMaster,
+              capDetail,
+              ...t(cap),
+              originBranchType: originHub.branchType,
+              originHubType: originHub.hubType,
+              destType: destHub.branchType,
+              destHubType: destHub.hubType,
+              source: "กลาง+HUB",
+              status: capDetail ? "มีทั้งกลางและ Detail" : "ค่ากลาง",
+              detailOnly: false
+            });
+          });
+        });
+      });
+      detailMap.forEach((capDetail, key) => {
+        if (routeMap.has(key)) return;
+        const [origin, destination, truck] = key.split("|||");
+        const originHub = hubByName.get(origin) || {};
+        const destHub = hubByName.get(destination) || {};
+        routeMap.set(key, {
+          origin,
+          destination,
+          truck,
+          cap: capDetail,
+          capMaster: null,
+          capDetail,
+          ...t(capDetail),
+          originBranchType: originHub.branchType || "",
+          originHubType: originHub.hubType || "",
+          destType: destHub.branchType || "",
+          destHubType: destHub.hubType || "",
+          source: "Detail",
+          status: "Detail เท่านั้น",
+          detailOnly: true
+        });
+      });
+      return {
+        routeCapacityData: [...routeMap.values()],
+        vehicleCapacityData,
+        vehicleCapacityTrucks: truckTypes,
+        hubMasterData
+      };
+    }
+
+    async function previewExcel() {
+      if (!selectedFile) return log("กรุณาเลือกไฟล์ Excel");
+      const buffer = await selectedFile.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      previewData = convertWorkbook(workbook);
+      $("routeRows").textContent = previewData.routeCapacityData.length.toLocaleString("th-TH");
+      $("vehicleRows").textContent = previewData.vehicleCapacityData.length.toLocaleString("th-TH");
+      $("truckRows").textContent = previewData.vehicleCapacityTrucks.length.toLocaleString("th-TH");
+      $("hubRows").textContent = previewData.hubMasterData.length.toLocaleString("th-TH");
+      $("sampleRows").innerHTML = previewData.routeCapacityData.slice(0, 10).map((row) => `<tr><td>${row.origin}</td><td>${row.destination}</td><td>${row.truck}</td><td>${row.cap}</td><td>${row.capMaster ?? "-"}</td><td>${row.capDetail ?? "-"}</td><td>${row.status}</td></tr>`).join("");
+      $("publishBtn").disabled = false;
+      log("Preview สำเร็จ");
+    }
+
+    async function publishData() {
+      if (!isAdmin || !previewData || !selectedFile) return log("ยังไม่มีสิทธิ์หรือยังไม่ได้ Preview");
+      const { fireMod, storageMod } = window.firebaseMods;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const safeName = selectedFile.name.replace(/[^\w.\-ก-๙]+/g, "_");
+      const excelPath = `uploads/excel/${timestamp}-${safeName}`;
+      const dataPath = "public/data.json";
+      const backupPath = `backup/data-${timestamp}.json`;
+      const payload = {
+        ...previewData,
+        updatedAt: new Date().toISOString(),
+        uploadedByUid: user.uid,
+        uploadedByEmail: user.email || ""
+      };
+      const json = JSON.stringify(payload);
+      await storageMod.uploadBytes(storageMod.ref(storage, excelPath), selectedFile);
+      await storageMod.uploadString(storageMod.ref(storage, dataPath), json, "raw", { contentType: "application/json" });
+      await storageMod.uploadString(storageMod.ref(storage, backupPath), json, "raw", { contentType: "application/json" });
+      await fireMod.addDoc(fireMod.collection(db, "dataVersions"), {
+        updatedAt: fireMod.serverTimestamp(),
+        uploadedByUid: user.uid,
+        uploadedByEmail: user.email || "",
+        excelPath,
+        dataPath,
+        backupPath,
+        routeRows: previewData.routeCapacityData.length,
+        vehicleRows: previewData.vehicleCapacityData.length,
+        hubRows: previewData.hubMasterData.length
+      });
+      log("Publish สำเร็จ");
+    }
+
+    initFirebase().catch((error) => log(`Firebase init error: ${error.message}`));
+  </script>
+</body>
+</html>
