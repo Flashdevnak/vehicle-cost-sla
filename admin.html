@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin Upload | Vehicle Cost & SLA</title>
+<meta name="theme-color" content="#111827">
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:#334155;font-family:Tahoma,'Noto Sans Thai','Sarabun','Segoe UI',Arial,sans-serif;line-height:1.55;-webkit-text-size-adjust:100%}
+button,input{font:inherit}button{cursor:pointer}a{text-decoration:none;color:inherit}
+.top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #cbd5e1}
+.top-inner{max-width:1080px;margin:auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;gap:10px;align-items:center}.mark{width:42px;height:42px;background:#111827;color:#fff;display:grid;place-items:center;font-weight:900}.brand b{display:block;color:#111827}.brand span{display:block;color:#64748b;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid #94a3b8;background:#fff;color:#111827;padding:9px 13px;min-height:38px}.btn.primary{background:#111827;color:#fff;border-color:#111827}.btn.green{background:#047857;color:#fff;border-color:#047857}.btn.red{background:#b42318;color:#fff;border-color:#b42318}.btn:disabled{opacity:.45;cursor:not-allowed}
+main{max-width:1080px;margin:auto;padding:18px 16px 56px}
+.panel{border-top:6px solid #111827;margin-bottom:20px}.head{border:1px solid #cbd5e1;border-top:0;background:#f8fafc;padding:18px}.head h1,.head h2{margin:0;color:#111827;border-left:5px solid #2563eb;padding-left:12px}.head p{margin:6px 0 0;color:#64748b;padding-left:17px}.body{border:1px solid #cbd5e1;border-top:0;padding:18px;background:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:block;margin-bottom:12px}.field b{display:block;margin-bottom:6px;color:#111827}.field input{width:100%;border:1px solid #94a3b8;padding:10px;min-height:42px}
+.note{background:#fffbeb;border-left:5px solid #f59e0b;padding:12px;margin-top:12px;color:#3f3521}.ok{background:#ecfdf5;border-left:5px solid #047857;padding:12px;margin-top:12px;color:#064e3b}.err{background:#fff1f2;border-left:5px solid #b42318;padding:12px;margin-top:12px;color:#7f1d1d}
+.stat{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #cbd5e1;margin-bottom:14px}.stat div{padding:12px;border-right:1px solid #cbd5e1;background:#f8fafc}.stat div:last-child{border-right:0}.stat small{display:block;color:#64748b}.stat strong{font-size:24px;color:#111827}
+.hidden{display:none!important}pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;overflow:auto;max-height:260px}
+table{width:100%;border-collapse:collapse}th{background:#111827;color:#fff;text-align:left;padding:8px;font-size:13px}td{border-top:1px solid #e5e7eb;padding:8px;font-size:13px}
+.help-list li{margin:5px 0}
+@media(max-width:720px){.top-inner{align-items:flex-start;flex-direction:column}.actions,.grid{display:grid;grid-template-columns:1fr;width:100%}.stat{grid-template-columns:1fr}.stat div{border-right:0;border-bottom:1px solid #cbd5e1}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="index.html">
+      <div class="mark">SLA</div>
+      <div><b>Vehicle Cost & SLA Admin</b><span>Login + Excel Upload + Firebase Publish</span></div>
+    </a>
+    <div class="actions">
+      <a class="btn" href="index.html">กลับหน้าเว็บ</a>
+      <button class="btn red hidden" id="logoutBtn" type="button">ออกจากระบบ</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="head"><h1>Admin Upload</h1><p>เฉพาะผู้ที่มีสิทธิ์ใน Firestore collection <b>admins</b> เท่านั้นที่ Publish ข้อมูลได้</p></div>
+    <div class="body">
+      <div id="configMsg" class="note">กำลังตรวจค่า Firebase...</div>
+    </div>
+  </section>
+
+  <section class="panel" id="loginPanel">
+    <div class="head"><h2>เข้าสู่ระบบ</h2><p>รองรับ Google Login และ Email/Password</p></div>
+    <div class="body">
+      <div class="grid">
+        <button class="btn primary" id="googleLoginBtn" type="button">Login ด้วย Google</button>
+        <button class="btn" id="emailLoginBtn" type="button">Login ด้วย Email/Password</button>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <label class="field"><b>Email</b><input id="emailInput" type="email" autocomplete="email"></label>
+        <label class="field"><b>Password</b><input id="passwordInput" type="password" autocomplete="current-password"></label>
+      </div>
+      <div id="loginMsg" class="note">Login แล้วถ้ายังไม่มีสิทธิ์ ระบบจะแสดง UID เพื่อให้เพิ่ม Admin คนแรกใน Firestore</div>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="adminPanel">
+    <div class="head"><h2>อัปโหลด Excel ล่าสุด</h2><p>ระบบอ่าน Excel แล้วสร้างข้อมูลใหม่ใน Firebase Storage: <b>public/data.json</b></p></div>
+    <div class="body">
+      <div id="adminInfo" class="ok"></div>
+      <label class="field"><b>เลือกไฟล์ Excel</b><input id="excelFile" type="file" accept=".xlsx,.xls"></label>
+      <div class="grid">
+        <button class="btn primary" id="previewBtn" type="button">ตรวจและสร้าง Preview</button>
+        <button class="btn green" id="publishBtn" type="button" disabled>Publish ขึ้น Firebase</button>
+      </div>
+      <div id="workMsg" class="note">ยังไม่ได้เลือกไฟล์ Excel</div>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="previewPanel">
+    <div class="head"><h2>ผลตรวจข้อมูลก่อน Publish</h2><p>ตรวจยอดและตัวอย่างข้อมูลก่อน Publish ทุกครั้ง</p></div>
+    <div class="body">
+      <div class="stat">
+        <div><small>Route Capacity</small><strong id="stRoute">0</strong></div>
+        <div><small>Capacity กลาง</small><strong id="stVehicle">0</strong></div>
+        <div><small>ประเภทรถ</small><strong id="stTruck">0</strong></div>
+        <div><small>HUB/สาขา</small><strong id="stHub">0</strong></div>
+      </div>
+      <div class="note">ตัวแปลงนี้รองรับโครงไฟล์เดิม: ชีท <b>Vehicle_capacity</b>, <b>HUB</b>, <b>Detail</b>. ถ้าโครงคอลัมน์เปลี่ยนมาก ต้องปรับ mapping เพิ่ม</div>
+      <h3>ตัวอย่าง Route 10 รายการแรก</h3>
+      <div style="overflow:auto"><table><thead><tr><th>ต้นทาง</th><th>ปลายทาง</th><th>รถ</th><th>Cap ใช้</th><th>กลาง</th><th>Detail</th><th>สถานะ</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
+      <h3>Log</h3>
+      <pre id="logBox"></pre>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="head"><h2>ขั้นตอน Admin คนแรก</h2><p>ทำครั้งเดียวหลัง Login สำเร็จ</p></div>
+    <div class="body">
+      <ol class="help-list">
+        <li>Login แล้วดู UID ที่ระบบแจ้ง ถ้ายังไม่มีสิทธิ์</li>
+        <li>ไปที่ Firebase Console → Firestore Database</li>
+        <li>สร้าง collection: <b>admins</b></li>
+        <li>สร้าง document ID = UID ของคุณ</li>
+        <li>เพิ่ม field: <b>active</b> = boolean true, <b>role</b> = string superAdmin, <b>email</b> = อีเมลของคุณ</li>
+        <li>กลับมา refresh หน้า Admin</li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, uploadString } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+const $ = id => document.getElementById(id);
+function show(id, text, cls="note"){ const el=$(id); el.className=cls; el.innerHTML=text; }
+function fmt(n){ return new Intl.NumberFormat("th-TH",{maximumFractionDigits:0}).format(Number(n||0)); }
+
+if(!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.storageBucket){
+  show("configMsg", "ยังไม่ได้ตั้งค่า firebase-config.js กรุณาใส่ค่า Firebase config ก่อนใช้งาน Admin", "err");
+}
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+show("configMsg", "เชื่อมต่อ Firebase config แล้ว", "ok");
+
+const knownTrucks = ["4W","4WJ","6W5.5","6W6.5","6W7.2","6W8.8","10W","14W","18W","22W"];
+let currentUser = null, isAdmin = false, selectedFile = null, previewData = null;
+
+function norm(v){ return String(v ?? "").toLowerCase().replace(/[_-]/g," ").replace(/\s+/g," ").trim(); }
+function nval(v){ if(v===null||v===undefined||v==="") return null; const n=Number(String(v).replace(/,/g,"")); return Number.isFinite(n) ? n : null; }
+function capThreshold(cap){ const n=nval(cap); if(!n || n<=0) return {load80:null,load90:null,load120:null}; return {load80:Math.ceil(n*.8), load90:Math.ceil(n*.9), load120:Math.ceil(n*1.2)}; }
+function cell(row, idx){ return row[idx] ?? ""; }
+function sheetRows(wb, name){
+  const sheetName = wb.SheetNames.find(s => norm(s) === norm(name)) || wb.SheetNames.find(s => norm(s).includes(norm(name)));
+  if(!sheetName) return [];
+  return XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:""});
+}
+function findTruckHeader(rows){
+  let best = {row:-1, cols:{}};
+  rows.slice(0, 35).forEach((r,i) => {
+    const cols = {};
+    r.forEach((c,j) => {
+      const txt = String(c).trim().toUpperCase();
+      const hit = knownTrucks.find(t => txt === t.toUpperCase());
+      if(hit) cols[hit] = j;
+    });
+    if(Object.keys(cols).length > Object.keys(best.cols).length) best = {row:i, cols};
+  });
+  return best;
+}
+function parseHub(rows){
+  const hubs=[], seen=new Set();
+  rows.forEach(r => {
+    let name = "";
+    for(const c of r){
+      const s = String(c||"").trim();
+      if(/_HUB-|BHUB|AHUB|HUB/i.test(s) && s.length > 5){ name=s; break; }
+    }
+    if(name && !seen.has(name)){
+      seen.add(name);
+      const joined = r.join(" ");
+      hubs.push({name, branchType:/BHub|BHUB/i.test(joined)?"BHub":(/AHUB/i.test(joined)?"Hub (UPC)":"Hub"), hubType:/BHUB/i.test(joined)?"BHUB":(/AHUB/i.test(joined)?"AHUB":"")});
+    }
+  });
+  return hubs;
+}
+function parseVehicleCapacity(rows){
+  const h = findTruckHeader(rows), out=[];
+  if(h.row < 0) return {items:out, trucks:knownTrucks};
+  for(let i=h.row+1;i<rows.length;i++){
+    const r=rows[i];
+    const key=String(cell(r,3) || cell(r,0) || "").trim();
+    if(!key) continue;
+    const caps={};
+    Object.entries(h.cols).forEach(([truck,col]) => { const val=nval(cell(r,col)); if(val!==null) caps[truck]=val; });
+    if(Object.keys(caps).length) out.push({key,caps});
+  }
+  return {items:out, trucks:Object.keys(h.cols).length ? Object.keys(h.cols) : knownTrucks};
+}
+function parseDetail(rows){
+  const out=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    const origin=String(cell(r,9)).trim();       // J
+    const destination=String(cell(r,10)).trim(); // K
+    const truck=String(cell(r,15)).trim();       // P
+    const cap=nval(cell(r,22));                  // W
+    if(origin && destination && truck && cap!==null) out.push({origin,destination,truck,capDetail:cap});
+  }
+  return out;
+}
+function matchCapRow(capRows, destName, destMeta){
+  const d = norm(destName + " " + (destMeta?.branchType||"") + " " + (destMeta?.hubType||""));
+  return capRows.find(x => d.includes(norm(x.key)) || norm(x.key).includes(d))
+      || capRows.find(x => {
+        const k = norm(x.key);
+        return k && (d.includes(k.split(" ")[0]) || (k.includes("hub") && d.includes("hub")) || (k.includes("bhub") && d.includes("bhub")));
+      })
+      || null;
+}
+function buildData(wb){
+  const logs=[];
+  const hubRows=sheetRows(wb,"HUB");
+  const vcRows=sheetRows(wb,"Vehicle_capacity");
+  const detailRows=sheetRows(wb,"Detail");
+  logs.push(`Sheets: ${wb.SheetNames.join(", ")}`);
+  logs.push(`HUB rows: ${hubRows.length}, Vehicle_capacity rows: ${vcRows.length}, Detail rows: ${detailRows.length}`);
+
+  const hubs=parseHub(hubRows);
+  const vc=parseVehicleCapacity(vcRows);
+  const details=parseDetail(detailRows);
+  logs.push(`Parsed HUB: ${hubs.length}`);
+  logs.push(`Parsed Vehicle_capacity conditions: ${vc.items.length}`);
+  logs.push(`Parsed Detail caps: ${details.length}`);
+
+  const map=new Map();
+  const key=(o,d,t)=>`${o}|||${d}|||${t}`;
+  if(hubs.length && vc.items.length){
+    for(const origin of hubs){
+      for(const dest of hubs){
+        if(origin.name===dest.name) continue;
+        const capRow=matchCapRow(vc.items,dest.name,dest);
+        if(!capRow) continue;
+        for(const truck of vc.trucks){
+          const cap=capRow.caps[truck];
+          if(cap===null || cap===undefined || cap==="") continue;
+          map.set(key(origin.name,dest.name,truck), {
+            origin:origin.name, destination:dest.name, truck, cap, capMaster:cap, capDetail:null,
+            ...capThreshold(cap),
+            originBranchType:origin.branchType, originHubType:origin.hubType,
+            destType:dest.branchType, destHubType:dest.hubType,
+            source:"กลาง+HUB", status:"ค่ากลาง", detailOnly:false
+          });
+        }
+      }
+    }
+  }
+  for(const d of details){
+    const k=key(d.origin,d.destination,d.truck);
+    const existing=map.get(k);
+    if(existing){
+      existing.capDetail=d.capDetail;
+      existing.status="มีทั้งกลางและ Detail";
+      existing.source="กลาง+Detail";
+      map.set(k, existing);
+    }else{
+      map.set(k, {origin:d.origin,destination:d.destination,truck:d.truck,cap:d.capDetail,capMaster:null,capDetail:d.capDetail,...capThreshold(d.capDetail),originBranchType:"",originHubType:"",destType:"",destHubType:"",source:"Detail",status:"Detail เท่านั้น",detailOnly:true});
+    }
+  }
+  const routeCapacityData=Array.from(map.values()).sort((a,b)=>String(a.origin).localeCompare(String(b.origin),"th") || String(a.destination).localeCompare(String(b.destination),"th") || knownTrucks.indexOf(a.truck)-knownTrucks.indexOf(b.truck));
+  const vehicleCapacityData=vc.items.map(x => ({originType:x.key.split(" to ")[0] || x.key, destType:x.key.split(" to ")[1] || x.key, condition:x.key, caps:x.caps}));
+  const data={schemaVersion:2,updatedAt:new Date().toISOString(),routeCapacityData,vehicleCapacityData,vehicleCapacityTrucks:vc.trucks,hubMasterData:hubs,converter:"vehicle-cost-sla-firebase-full-final"};
+  logs.push(`Final routeCapacityData: ${routeCapacityData.length}`);
+  logs.push(`Final vehicleCapacityData: ${vehicleCapacityData.length}`);
+  return {data,logs};
+}
+
+$("googleLoginBtn").onclick = async()=>{ try{ await signInWithPopup(auth,new GoogleAuthProvider()); }catch(e){ show("loginMsg",e.message,"err"); } };
+$("emailLoginBtn").onclick = async()=>{ try{ await signInWithEmailAndPassword(auth,$("emailInput").value.trim(),$("passwordInput").value); }catch(e){ show("loginMsg",e.message,"err"); } };
+$("logoutBtn").onclick = async()=> signOut(auth);
+
+onAuthStateChanged(auth, async user=>{
+  currentUser=user; isAdmin=false;
+  $("logoutBtn").classList.toggle("hidden",!user);
+  if(!user){ $("loginPanel").classList.remove("hidden"); $("adminPanel").classList.add("hidden"); return; }
+  const snap=await getDoc(doc(db,"admins",user.uid));
+  isAdmin=snap.exists() && snap.data().active !== false;
+  if(!isAdmin){
+    $("loginPanel").classList.remove("hidden"); $("adminPanel").classList.add("hidden");
+    show("loginMsg",`Login แล้ว แต่ยังไม่มีสิทธิ์ Admin<br><b>Email:</b> ${user.email || "-"}<br><b>UID:</b> ${user.uid}<br><br>เพิ่ม Firestore: collection <b>admins</b> / document ID = UID นี้ / field <b>active=true</b>`,"err");
+    return;
+  }
+  $("loginPanel").classList.add("hidden"); $("adminPanel").classList.remove("hidden");
+  show("adminInfo",`เข้าสู่ระบบแล้ว: <b>${user.email || user.uid}</b>`,"ok");
+});
+
+$("excelFile").onchange=e=>{ selectedFile=e.target.files?.[0] || null; previewData=null; $("publishBtn").disabled=true; show("workMsg",selectedFile?`เลือกไฟล์แล้ว: <b>${selectedFile.name}</b>`:"ยังไม่ได้เลือกไฟล์ Excel","note"); };
+$("previewBtn").onclick=async()=>{
+  if(!selectedFile) return show("workMsg","กรุณาเลือก Excel ก่อน","err");
+  try{
+    show("workMsg","กำลังอ่านไฟล์ Excel...","note");
+    const buf=await selectedFile.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    const result=buildData(wb);
+    previewData=result.data;
+    $("stRoute").textContent=fmt(previewData.routeCapacityData.length);
+    $("stVehicle").textContent=fmt(previewData.vehicleCapacityData.length);
+    $("stTruck").textContent=fmt(previewData.vehicleCapacityTrucks.length);
+    $("stHub").textContent=fmt(previewData.hubMasterData.length);
+    $("sampleRows").innerHTML=previewData.routeCapacityData.slice(0,10).map(r=>`<tr><td>${r.origin}</td><td>${r.destination}</td><td>${r.truck}</td><td>${r.cap ?? "-"}</td><td>${r.capMaster ?? "-"}</td><td>${r.capDetail ?? "-"}</td><td>${r.status}</td></tr>`).join("");
+    $("logBox").textContent=result.logs.join("\n");
+    $("previewPanel").classList.remove("hidden");
+    $("publishBtn").disabled=previewData.routeCapacityData.length===0;
+    show("workMsg","สร้าง Preview สำเร็จ ตรวจยอดก่อนกด Publish","ok");
+  }catch(e){ console.error(e); show("workMsg","อ่านไฟล์ไม่สำเร็จ: "+e.message,"err"); }
+};
+$("publishBtn").onclick=async()=>{
+  if(!isAdmin || !currentUser) return show("workMsg","ไม่มีสิทธิ์ Admin","err");
+  if(!previewData || !selectedFile) return show("workMsg","ยังไม่มี Preview","err");
+  try{
+    $("publishBtn").disabled=true;
+    show("workMsg","กำลัง Publish ขึ้น Firebase...","note");
+    const ts=new Date().toISOString().replace(/[:.]/g,"-");
+    const excelPath=`uploads/excel/${ts}-${selectedFile.name}`;
+    const dataPath="public/data.json";
+    const backupPath=`backup/data-${ts}.json`;
+
+    previewData.updatedAt=new Date().toISOString();
+    previewData.uploadedByUid=currentUser.uid;
+    previewData.uploadedByEmail=currentUser.email || "";
+
+    await uploadBytes(ref(storage,excelPath),selectedFile,{contentType:selectedFile.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const jsonText=JSON.stringify(previewData);
+    await uploadString(ref(storage,dataPath),jsonText,"raw",{contentType:"application/json; charset=utf-8"});
+    await uploadString(ref(storage,backupPath),jsonText,"raw",{contentType:"application/json; charset=utf-8"});
+    await addDoc(collection(db,"dataVersions"),{updatedAt:serverTimestamp(),uploadedByUid:currentUser.uid,uploadedByEmail:currentUser.email||"",excelPath,dataPath,backupPath,routeRows:previewData.routeCapacityData.length,vehicleRows:previewData.vehicleCapacityData.length,hubRows:previewData.hubMasterData.length});
+    show("workMsg",`Publish สำเร็จ เปิดหน้าเว็บหลักแล้ว refresh หรือเปิด <b>index.html?v=${Date.now()}</b>`,"ok");
+  }catch(e){ console.error(e); $("publishBtn").disabled=false; show("workMsg","Publish ไม่สำเร็จ: "+e.message,"err"); }
+};
+</script>
+</body>
+</html>
