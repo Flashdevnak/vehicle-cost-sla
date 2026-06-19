@@ -130,7 +130,7 @@
       return { load40: Math.ceil(n * 0.4), load80: Math.ceil(n * 0.8), load90: Math.ceil(n * 0.9), load120: Math.ceil(n * 1.2) };
     };
 
-    let auth, db, storage, user, isAdmin = false, selectedFile = null, previewData = null, validation = { errors: [], warnings: [] };
+    let auth, db, user, isAdmin = false, selectedFile = null, previewData = null, validation = { errors: [], warnings: [] };
 
     function setStatus(el, text, type = "") {
       el.textContent = text;
@@ -152,17 +152,15 @@
         setStatus($("setupStatus"), "โหมดเตรียมตั้งค่า: กรุณาเพิ่ม Firebase config ก่อนใช้งานจริง", "blocked");
         return;
       }
-      const [{ initializeApp }, authMod, fireMod, storageMod] = await Promise.all([
+      const [{ initializeApp }, authMod, fireMod] = await Promise.all([
         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
         import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js")
+        import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
       ]);
       const app = initializeApp(firebaseConfig);
       auth = authMod.getAuth(app);
       db = fireMod.getFirestore(app);
-      storage = storageMod.getStorage(app);
-      window.firebaseMods = { authMod, fireMod, storageMod };
+      window.firebaseMods = { authMod, fireMod };
       setStatus($("setupStatus"), "ระบบพร้อมใช้งาน", "ok");
       authMod.onAuthStateChanged(auth, async (currentUser) => {
         user = currentUser;
@@ -378,6 +376,44 @@
       };
     }
 
+    function buildDataChunks(data, routeChunkSize = 400) {
+      const chunks = [{
+        id: "meta",
+        data: {
+          type: "meta",
+          index: 0,
+          vehicleCapacityData: data.vehicleCapacityData,
+          vehicleCapacityTrucks: data.vehicleCapacityTrucks,
+          hubMasterData: data.hubMasterData
+        }
+      }];
+      for (let i = 0; i < data.routeCapacityData.length; i += routeChunkSize) {
+        const index = Math.floor(i / routeChunkSize) + 1;
+        chunks.push({
+          id: `routes_${String(index).padStart(4, "0")}`,
+          data: {
+            type: "routes",
+            index,
+            rows: data.routeCapacityData.slice(i, i + routeChunkSize)
+          }
+        });
+      }
+      chunks.forEach((chunk) => {
+        const size = new Blob([JSON.stringify(chunk.data)]).size;
+        if (size > 850000) throw new Error(`Chunk ${chunk.id} มีขนาดใหญ่เกินไป (${Math.ceil(size / 1024)} KB) กรุณาลดขนาด route chunk`);
+      });
+      return chunks;
+    }
+
+    async function commitBatchWrites(writes, size = 450) {
+      const { fireMod } = window.firebaseMods;
+      for (let i = 0; i < writes.length; i += size) {
+        const batch = fireMod.writeBatch(db);
+        writes.slice(i, i + size).forEach(({ ref, data }) => batch.set(ref, data));
+        await batch.commit();
+      }
+    }
+
     async function previewExcel() {
       if (!selectedFile) {
         validation = { errors: ["กรุณาเลือกไฟล์ Excel"], warnings: [] };
@@ -397,31 +433,28 @@
 
     async function publishData() {
       if (!isAdmin || !previewData || !selectedFile || validation.errors.length) return;
-      const { fireMod, storageMod } = window.firebaseMods;
+      const { fireMod } = window.firebaseMods;
       const versionId = `v-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-      const sourcePath = `uploads/${versionId}/source.xlsx`;
-      const dataPath = `uploads/${versionId}/normalized-data.json`;
-      const payload = {
-        ...previewData,
-        updatedAt: new Date().toISOString(),
-        uploadedByUid: user.uid,
-        uploadedByEmail: user.email || ""
-      };
-      await storageMod.uploadBytes(storageMod.ref(storage, sourcePath), selectedFile);
-      await storageMod.uploadString(storageMod.ref(storage, dataPath), JSON.stringify(payload), "raw", { contentType: "application/json" });
+      const chunks = buildDataChunks(previewData);
       const metadata = {
         versionId,
         updatedAt: fireMod.serverTimestamp(),
-        uploadedByUid: user.uid,
-        uploadedByEmail: user.email || "",
-        sourcePath,
-        dataPath,
+        updatedByUid: user.uid,
+        updatedByEmail: user.email || "",
         routeRows: previewData.routeCapacityData.length,
         vehicleRows: previewData.vehicleCapacityData.length,
-        hubRows: previewData.hubMasterData.length
+        hubRows: previewData.hubMasterData.length,
+        chunkCount: chunks.length,
+        status: "published",
+        note: selectedFile.name || ""
       };
-      await fireMod.setDoc(fireMod.doc(db, "site_versions", versionId), metadata);
-      await fireMod.setDoc(fireMod.doc(db, "site_current", "current"), metadata);
+      const writes = chunks.map((chunk) => ({
+        ref: fireMod.doc(db, "site_data", versionId, "chunks", chunk.id),
+        data: chunk.data
+      }));
+      writes.push({ ref: fireMod.doc(db, "site_versions", versionId), data: metadata });
+      writes.push({ ref: fireMod.doc(db, "site_current", "current"), data: metadata });
+      await commitBatchWrites(writes);
       setStatus($("setupStatus"), "เผยแพร่ข้อมูลสำเร็จ", "ok");
       await loadVersions();
     }
@@ -440,7 +473,7 @@
       $("versionList").innerHTML = snap.docs.map((docSnap) => {
         const row = docSnap.data();
         const date = row.updatedAt?.toDate?.().toLocaleString("th-TH") || "-";
-        return `<div class="version-item"><div><b>${row.versionId || docSnap.id}</b><small>${date} โดย ${row.uploadedByEmail || "-"} / route ${row.routeRows || 0} / vehicle ${row.vehicleRows || 0}</small></div><button class="btn rollback-btn" data-version="${docSnap.id}" type="button">Rollback</button></div>`;
+        return `<div class="version-item"><div><b>${row.versionId || docSnap.id}</b><small>${date} โดย ${row.updatedByEmail || "-"} / route ${row.routeRows || 0} / vehicle ${row.vehicleRows || 0} / chunks ${row.chunkCount || 0}</small></div><button class="btn rollback-btn" data-version="${docSnap.id}" type="button">Rollback</button></div>`;
       }).join("");
       document.querySelectorAll(".rollback-btn").forEach((btn) => btn.addEventListener("click", () => rollbackVersion(btn.dataset.version)));
     }
@@ -450,11 +483,17 @@
       const { fireMod } = window.firebaseMods;
       const snap = await fireMod.getDoc(fireMod.doc(db, "site_versions", versionId));
       if (!snap.exists()) return;
+      const version = snap.data();
       await fireMod.setDoc(fireMod.doc(db, "site_current", "current"), {
-        ...snap.data(),
-        rolledBackAt: fireMod.serverTimestamp(),
-        rolledBackByUid: user.uid,
-        rolledBackByEmail: user.email || ""
+        versionId: version.versionId || versionId,
+        updatedAt: fireMod.serverTimestamp(),
+        updatedByUid: user.uid,
+        updatedByEmail: user.email || "",
+        routeRows: version.routeRows || 0,
+        vehicleRows: version.vehicleRows || 0,
+        hubRows: version.hubRows || 0,
+        chunkCount: version.chunkCount || 0,
+        status: "published"
       });
       setStatus($("setupStatus"), "Rollback สำเร็จ", "ok");
       await loadVersions();

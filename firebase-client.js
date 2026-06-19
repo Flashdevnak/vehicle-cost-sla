@@ -31,33 +31,43 @@ function applyData(payload) {
   };
 }
 
+function rebuildPayloadFromChunks(chunkDocs) {
+  const chunks = chunkDocs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  const meta = chunks.find((chunk) => chunk.type === "meta");
+  const routeChunks = chunks
+    .filter((chunk) => chunk.type === "routes")
+    .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));
+  if (!meta || !routeChunks.length) throw new Error("Published data chunks are incomplete");
+  return {
+    routeCapacityData: routeChunks.flatMap((chunk) => Array.isArray(chunk.rows) ? chunk.rows : []),
+    vehicleCapacityData: Array.isArray(meta.vehicleCapacityData) ? meta.vehicleCapacityData : [],
+    vehicleCapacityTrucks: Array.isArray(meta.vehicleCapacityTrucks) ? meta.vehicleCapacityTrucks : [],
+    hubMasterData: Array.isArray(meta.hubMasterData) ? meta.hubMasterData : []
+  };
+}
+
 async function loadFirebaseData() {
   if (!hasConfig) return;
 
   try {
-    const [{ initializeApp }, fireMod, storageMod] = await Promise.all([
+    const [{ initializeApp }, fireMod] = await Promise.all([
       import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js")
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
     ]);
     const app = initializeApp(firebaseConfig);
     const db = fireMod.getFirestore(app);
-    const storage = storageMod.getStorage(app);
     const currentSnap = await fireMod.getDoc(fireMod.doc(db, "site_current", "current"));
     if (!currentSnap.exists()) {
       window.VehicleSLA?.refreshAll?.();
       return;
     }
     const current = currentSnap.data();
-    const dataPath = current.dataPath || current.normalizedDataPath || current.storagePath;
-    if (!dataPath) throw new Error("Current version has no data path");
-    const url = await storageMod.getDownloadURL(storageMod.ref(storage, dataPath));
-    const payload = await fetch(url, { cache: "no-store" }).then((res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    });
+    const versionId = current.versionId;
+    if (!versionId) throw new Error("Current version has no versionId");
+    const chunkSnap = await fireMod.getDocs(fireMod.collection(db, "site_data", versionId, "chunks"));
+    const payload = rebuildPayloadFromChunks(chunkSnap.docs);
     applyData(payload);
-    const updatedAt = current.updatedAt?.toDate?.() || payload.updatedAt || current.publishedAt?.toDate?.();
+    const updatedAt = current.updatedAt?.toDate?.() || current.publishedAt?.toDate?.();
     if (updatedAt) showPublicStatus(`อัปเดตข้อมูลล่าสุด: ${new Date(updatedAt).toLocaleString("th-TH")}`);
     window.VehicleSLA?.refreshAll?.();
   } catch (error) {

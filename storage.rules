@@ -1,24 +1,6 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null;
-    }
-    function isAdmin() {
-      return signedIn()
-        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
-        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.active != false;
-    }
-
-    match /uploads/{versionId}/source.xlsx {
-      allow read, write: if isAdmin();
-    }
-
-    match /uploads/{versionId}/normalized-data.json {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     match /{allPaths=**} {
       allow read, write: if false;
     }

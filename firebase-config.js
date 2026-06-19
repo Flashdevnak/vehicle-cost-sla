@@ -1,5 +1,5 @@
 // Your web app's Firebase configuration
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAz_o1d-8zk69Zahww0QzeeYAQLv6K2cLU",
   authDomain: "vehicle-cost-sla.firebaseapp.com",
   projectId: "vehicle-cost-sla",
