@@ -67,11 +67,27 @@
     };
   }
 
+  function normalizeRouteRow(row) {
+    const cap = normalizeCap(row?.cap ?? row?.capMaster ?? row?.capDetail);
+    const t = threshold(cap);
+    return {
+      ...row,
+      cap,
+      capMaster: normalizeCap(row?.capMaster),
+      capDetail: normalizeCap(row?.capDetail),
+      load40: normalizeCap(row?.load40) ?? t.v40,
+      load80: normalizeCap(row?.load80) ?? t.v80,
+      load90: normalizeCap(row?.load90) ?? t.v90,
+      load120: normalizeCap(row?.load120) ?? t.v120
+    };
+  }
+
   function normalizeAllData() {
+    window.routeCapacityData = (window.routeCapacityData || []).map(normalizeRouteRow);
     window.vehicleCapacityData = (window.vehicleCapacityData || []).map(normalizeVehicleRow);
     window.vehicleCapacityTrucks = TRUCK_ORDER.slice();
     window.VEHICLE_SLA_DATA = {
-      routeCapacityData: window.routeCapacityData || [],
+      routeCapacityData: window.routeCapacityData,
       vehicleCapacityData: window.vehicleCapacityData,
       vehicleCapacityTrucks: window.vehicleCapacityTrucks,
       hubMasterData: window.hubMasterData || []
@@ -95,21 +111,27 @@
 
   function threshold(cap) {
     const n = Number(cap);
-    if (!Number.isFinite(n) || n <= 0) return { v80: 0, v90: 0, v120: 0 };
-    return { v80: Math.ceil(n * 0.8), v90: Math.ceil(n * 0.9), v120: Math.ceil(n * 1.2) };
+    if (!Number.isFinite(n) || n <= 0) return { v40: null, v80: null, v90: null, v120: null };
+    return { v40: Math.ceil(n * 0.4), v80: Math.ceil(n * 0.8), v90: Math.ceil(n * 0.9), v120: Math.ceil(n * 1.2) };
+  }
+
+  function thresholdsForRow(row, cap = row?.cap) {
+    const fallback = threshold(cap);
+    return {
+      v40: Number(row?.load40) || fallback.v40,
+      v80: Number(row?.load80) || fallback.v80,
+      v90: Number(row?.load90) || fallback.v90,
+      v120: Number(row?.load120) || fallback.v120
+    };
   }
 
   function thresholdLine(label, values, className) {
     if (!values) return "";
-    return `<div class="threshold-line ${className}"><em>${esc(label)}</em><span><b>80%</b>${fmt(values.v80)}</span><span><b>90%</b>${fmt(values.v90)}</span><span><b>120%</b>${fmt(values.v120)}</span></div>`;
+    return `<div class="threshold-line ${className}"><em>${esc(label)}</em><span><b>40%</b>${fmt(values.v40)}</span><span><b>80%</b>${fmt(values.v80)}</span><span><b>90%</b>${fmt(values.v90)}</span><span><b>120%</b>${fmt(values.v120)}</span></div>`;
   }
 
   function thresholdCell(row) {
-    const main = {
-      v80: Number(row.load80) || threshold(row.cap).v80,
-      v90: Number(row.load90) || threshold(row.cap).v90,
-      v120: Number(row.load120) || threshold(row.cap).v120
-    };
+    const main = thresholdsForRow(row);
     const detail = row.capDetail ? threshold(row.capDetail) : null;
     return `<div class="thresholds-dual">${thresholdLine("กลาง/ใช้", main, "main-threshold")}${thresholdLine("Detail", detail, "detail-threshold")}</div>`;
   }
@@ -117,7 +139,7 @@
   function detailThresholdText(row) {
     if (!row.capDetail) return "";
     const t = threshold(row.capDetail);
-    return `<div class="route-card-group route-card-group-detail"><div class="route-card-group-title">Detail</div><div class="route-cap-tags route-cap-tags-detail"><span>Detail: ${fmt(row.capDetail)}</span><span>80%: ${fmt(t.v80)}</span><span>90%: ${fmt(t.v90)}</span><span>120%: ${fmt(t.v120)}</span></div></div>`;
+    return `<div class="route-card-group route-card-group-detail"><div class="route-card-group-title">Detail</div><div class="route-cap-tags route-cap-tags-detail"><span>Detail: ${fmt(row.capDetail)}</span><span>40%: ${fmt(t.v40)}</span><span>80%: ${fmt(t.v80)}</span><span>90%: ${fmt(t.v90)}</span><span>120%: ${fmt(t.v120)}</span></div></div>`;
   }
 
   function ensureRoutePager() {
@@ -165,7 +187,10 @@
       rows.innerHTML = rowsToShow.length ? rowsToShow.map((row) => `<tr><td class="col-origin">${esc(row.origin)}</td><td class="col-destination">${esc(row.destination)}</td><td class="col-status">${badge(row)}</td><td class="col-truck">${esc(row.truck)}</td><td class="col-capcombo"><div class="cap-combo"><strong>${fmt(row.cap)}</strong><small>กลาง: ${fmt(row.capMaster)} / Detail: ${fmt(row.capDetail)}</small></div></td><td class="col-thresholds">${thresholdCell(row)}</td></tr>`).join("") : '<tr><td colspan="6" class="route-empty">ไม่พบข้อมูลตามคำค้นหา</td></tr>';
     }
     if (cards) {
-      cards.innerHTML = rowsToShow.length ? rowsToShow.map((row) => `<article class="route-card-mini"><div class="route-card-top"><span>${esc(row.truck)}</span><strong>Cap ${fmt(row.cap)} ชิ้น</strong></div><h3>${esc(row.origin)} → ${esc(row.destination)}</h3><div class="route-card-group route-card-group-main"><div class="route-card-group-title">ค่ากลาง</div><div class="route-cap-tags route-cap-tags-main"><span>กลาง: ${fmt(row.capMaster)}</span><span>80%: ${fmt(row.load80)}</span><span>90%: ${fmt(row.load90)}</span><span>120%: ${fmt(row.load120)}</span></div></div>${detailThresholdText(row)}<div class="route-card-status"><b>สถานะ:</b> ${esc(statusLabel(row))} / <b>ประเภทปลายทาง:</b> ${esc(row.destType || "-")}</div></article>`).join("") : '<div class="route-empty">ไม่พบข้อมูลตามคำค้นหา</div>';
+      cards.innerHTML = rowsToShow.length ? rowsToShow.map((row) => {
+        const t = thresholdsForRow(row);
+        return `<article class="route-card-mini"><div class="route-card-top"><span>${esc(row.truck)}</span><strong>Cap ${fmt(row.cap)} ชิ้น</strong></div><h3>${esc(row.origin)} → ${esc(row.destination)}</h3><div class="route-card-group route-card-group-main"><div class="route-card-group-title">ค่ากลาง</div><div class="route-cap-tags route-cap-tags-main"><span>กลาง: ${fmt(row.capMaster)}</span><span>40%: ${fmt(t.v40)}</span><span>80%: ${fmt(t.v80)}</span><span>90%: ${fmt(t.v90)}</span><span>120%: ${fmt(t.v120)}</span></div></div>${detailThresholdText(row)}<div class="route-card-status"><b>สถานะ:</b> ${esc(statusLabel(row))} / <b>ประเภทปลายทาง:</b> ${esc(row.destType || "-")}</div></article>`;
+      }).join("") : '<div class="route-empty">ไม่พบข้อมูลตามคำค้นหา</div>';
     }
     const scopeText = state.routeSearchScope === "origin" ? "จุดเริ่มต้น" : state.routeSearchScope === "destination" ? "จุดสิ้นสุด" : state.routeSearchScope === "truck" ? "ประเภทรถ" : "ทั้งหมด";
     if ($("routeResultText")) $("routeResultText").innerHTML = `ค้นจาก <strong>${scopeText}</strong> / แสดง <strong>${fmt(rowsToShow.length)}</strong> จาก ${fmt(routes.length)} รายการ`;
@@ -258,6 +283,7 @@
       ["Capacity 100%", `${fmt(info.cap)} ชิ้น`],
       ["จำนวนโหลดจริง", `${fmt(info.actual)} ชิ้น`],
       ["อัตราบรรทุก", info.cap ? `${fmt(info.rate, 1)}%` : "-"],
+      ["เกณฑ์ 40%", `${fmt(info.t.v40)} ชิ้น`],
       ["เกณฑ์ 80%", `${fmt(info.t.v80)} ชิ้น`],
       ["เกณฑ์ 90%", `${fmt(info.t.v90)} ชิ้น`],
       ["เกณฑ์ 120%", `${fmt(info.t.v120)} ชิ้น`],
@@ -304,7 +330,7 @@
           capMaster: row.capMaster,
           capDetail: row.capDetail,
           status: row.status || "",
-          t: { v80: Number(row.load80) || threshold(row.cap).v80, v90: Number(row.load90) || threshold(row.cap).v90, v120: Number(row.load120) || threshold(row.cap).v120 }
+          t: thresholdsForRow(row)
         };
       }
     } else {
@@ -326,8 +352,9 @@
       }
     }
     info.rate = info.cap > 0 ? (info.actual / info.cap) * 100 : 0;
-    info.remark = info.cap <= 0 ? "เลือกข้อมูลเพื่อเริ่มคำนวณ" : info.rate < 80 ? "ต่ำกว่า 80% ควรพิจารณารวมโหลดหรือปรับขนาดรถ" : info.rate < 90 ? "ผ่านขั้นต่ำ 80% แต่ยังต่ำกว่าเป้าหมาย 90%" : info.rate <= 120 ? "อยู่ในช่วงเหมาะสม" : "เกิน 120% โปรดตรวจสอบความปลอดภัยและเงื่อนไขรางวัล";
+    info.remark = info.cap <= 0 ? "เลือกข้อมูลเพื่อเริ่มคำนวณ" : info.rate < 40 ? "ต่ำกว่า 40%: ควรตรวจสอบความจำเป็นในการใช้รถ/รถเสริม" : info.rate < 80 ? "ตั้งแต่ 40% แต่ยังต่ำกว่า 80%: ควรพิจารณาปรับแผนโหลดหรือรวมเส้นทาง" : info.rate < 90 ? "ผ่านเกณฑ์ขั้นต่ำ 80% แต่ยังไม่ถึงเป้าหมาย 90%" : info.rate <= 120 ? "อยู่ในช่วงเป้าหมาย" : "เกิน 120%: ควรตรวจสอบความถูกต้องของ Capacity หรือจำนวนโหลดจริง";
     if ($("capInput")) $("capInput").value = info.cap || 0;
+    if ($("min40")) $("min40").textContent = `${fmt(info.t.v40)} ชิ้น`;
     if ($("min80")) $("min80").textContent = `${fmt(info.t.v80)} ชิ้น`;
     if ($("min90")) $("min90").textContent = `${fmt(info.t.v90)} ชิ้น`;
     if ($("min120")) $("min120").textContent = `${fmt(info.t.v120)} ชิ้น`;
