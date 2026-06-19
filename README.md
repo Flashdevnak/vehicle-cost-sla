@@ -7,25 +7,33 @@
 ## วิธีตั้งค่า Firebase
 
 1. สร้าง Firebase Project
-2. เพิ่ม Web App แล้วคัดลอกค่า config มาใส่ใน `firebase-config.js`
-3. เปิด Authentication provider ที่ต้องใช้ เช่น Google หรือ Email/Password
-4. เพิ่ม Authorized domain: `flashdevnak.github.io`
-5. เปิด Firestore Database
-6. Publish กฎจาก `firestore.rules` ไปที่ Firestore Rules
-7. ไม่ต้องเปิด Firebase Storage และไม่ต้องตั้งค่า Storage rules สำหรับระบบหลัก
-8. เปิด `admin.html` แล้ว Login
-9. ถ้ายังไม่ใช่ admin ให้คัดลอก UID จากหน้า Admin แล้วเพิ่มเอกสาร `admins/{UID}` ใน Firestore:
+2. สร้าง Web App
+3. คัดลอกค่า Firebase web app config มาใส่ใน `firebase-config.js`
+4. เปิด Authentication provider:
+   - Google
+   - Email/Password
+5. เพิ่ม Authorized domain: `flashdevnak.github.io`
+6. เปิด Firestore Database
+7. Publish กฎจาก `firestore.rules` ไปที่ Firestore Rules
+8. ไม่ต้องเปิด Firebase Storage และไม่ต้องตั้งค่า Storage rules สำหรับระบบหลัก
+9. เปิด `admin.html`
+10. Login ด้วย Google หรือสมัคร/เข้าสู่ระบบด้วยอีเมล
+11. หากยังไม่ได้รับสิทธิ์ ให้คัดลอก UID ที่หน้า Admin แสดง
+12. เพิ่ม UID ใน Firestore collection `admins`
+13. กลับมาที่หน้า Admin แล้ว Refresh
+14. Upload Excel > ตรวจสอบและแสดงตัวอย่าง > เผยแพร่ข้อมูล
+15. ใช้ Version History / Rollback หากต้องย้อนข้อมูล
 
-```json
-{
-  "active": true,
-  "role": "superAdmin",
-  "email": "admin@example.com"
-}
-```
+ตัวอย่างการเพิ่ม admin คนแรก:
 
-10. กลับมาที่หน้า Admin แล้วเลือกไฟล์ Excel > Validate & Preview > Publish
-11. เปิดเว็บด้วย cache-busting URL เช่น `https://flashdevnak.github.io/vehicle-cost-sla/?v=20260618`
+- collection: `admins`
+- document ID: UID จากหน้า Admin
+- fields:
+  - `active` = `true`
+  - `role` = `superAdmin`
+  - `email` = อีเมลผู้ใช้งาน
+
+`active` ต้องเป็น Boolean `true` ไม่ใช่ string `"true"`
 
 ## โครงสร้างข้อมูล Firestore
 

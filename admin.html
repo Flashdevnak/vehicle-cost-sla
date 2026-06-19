@@ -13,6 +13,14 @@
     .admin-hero p{margin:0;color:#d8e0e6}
     .admin-panel{background:#fff;border:1px solid var(--line);padding:20px;margin-bottom:16px}
     .admin-panel h2{margin:0 0 10px;color:var(--ink);font-size:22px}
+    .admin-panel p{margin:0 0 12px;color:var(--muted)}
+    .admin-userbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+    .admin-user-meta{display:grid;gap:2px;text-align:right;color:var(--muted);font-size:12px}
+    .admin-user-meta b{color:var(--ink);font-size:14px}
+    .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .login-field{display:grid;gap:5px}
+    .login-field label{font-weight:800;color:var(--ink);font-size:13px}
+    .login-field input{min-height:42px;border:1px solid var(--line);padding:8px 10px}
     .admin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
     .admin-actions input{min-height:40px;border:1px solid var(--line);padding:8px 10px}
     .admin-status{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface-2);padding:8px 10px;color:var(--text);font-size:13px}
@@ -38,14 +46,21 @@
     .version-list{display:grid;gap:8px;margin-top:10px}
     .version-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid var(--line-2);padding:10px;background:var(--surface-2)}
     .version-item small{display:block;color:var(--muted)}
-    @media(max-width:767px){.admin-grid,.step-grid{grid-template-columns:1fr}.admin-actions .btn,.admin-actions input{width:100%}.version-item{grid-template-columns:1fr}}
+    @media(max-width:767px){.admin-grid,.step-grid,.login-grid{grid-template-columns:1fr}.admin-actions .btn,.admin-actions input{width:100%}.version-item{grid-template-columns:1fr}.admin-userbar{justify-content:flex-start}.admin-user-meta{text-align:left}}
   </style>
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="index.html"><div class="mark">SLA</div><div><b>Vehicle Cost & SLA Control</b><span>Admin</span></div></a>
-      <div class="toolbar"><a class="btn" href="index.html">กลับหน้าเว็บ</a></div>
+      <div class="toolbar admin-userbar">
+        <div class="admin-user-meta" id="adminUserMeta">
+          <b id="adminUserEmail">ยังไม่ได้เข้าสู่ระบบ</b>
+          <span id="adminUserRole"></span>
+        </div>
+        <button class="btn" id="headerLogoutBtn" type="button" hidden>ออกจากระบบ</button>
+        <a class="btn" href="index.html">กลับหน้าเว็บ</a>
+      </div>
     </div>
   </header>
 
@@ -66,18 +81,32 @@
       </div>
     </section>
 
-    <section class="admin-panel">
-      <h2>เข้าสู่ระบบ</h2>
-      <div class="admin-actions">
-        <button class="btn main" id="googleLogin" type="button">Google Login</button>
-        <input id="emailInput" type="email" placeholder="Email">
-        <input id="passwordInput" type="password" placeholder="Password">
-        <button class="btn" id="emailLogin" type="button">Email Login</button>
-        <button class="btn" id="logoutBtn" type="button">Logout</button>
+    <section class="admin-panel" id="authPanel">
+      <h2>เข้าสู่ระบบผู้ดูแลระบบ</h2>
+      <p>ใช้บัญชี Google หรือสมัครด้วยอีเมลเพื่อเข้าสู่ระบบจัดการข้อมูล</p>
+      <div id="loginControls">
+        <div class="admin-actions">
+          <button class="btn main" id="googleLogin" type="button">เข้าสู่ระบบด้วย Google</button>
+        </div>
+        <div class="login-grid">
+          <div class="login-field">
+            <label for="emailInput">อีเมล</label>
+            <input id="emailInput" type="email" autocomplete="email" placeholder="admin@example.com">
+          </div>
+          <div class="login-field">
+            <label for="passwordInput">รหัสผ่าน</label>
+            <input id="passwordInput" type="password" autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+          </div>
+        </div>
+        <div class="admin-actions">
+          <button class="btn main" id="emailLogin" type="button">เข้าสู่ระบบด้วยอีเมล</button>
+          <button class="btn" id="emailSignup" type="button">สมัครบัญชีใหม่</button>
+        </div>
+        <p>หลังสมัครบัญชีใหม่ ต้องให้ผู้ดูแลระบบเปิดสิทธิ์ก่อนจึงจะใช้งาน Admin ได้</p>
       </div>
-      <p id="authStatus" class="admin-status">รอเข้าสู่ระบบ</p>
+      <p id="authStatus" class="admin-status">ยังไม่ได้เข้าสู่ระบบ</p>
       <div class="uid-box" id="uidBox" hidden>
-        <span>UID สำหรับเปิดสิทธิ์ผู้ดูแลระบบ</span>
+        <span>ส่ง UID นี้ให้ผู้ดูแลระบบเพื่อเปิดสิทธิ์</span>
         <code id="uidValue"></code>
         <button class="btn" id="copyUidBtn" type="button">คัดลอก UID</button>
       </div>
@@ -87,8 +116,8 @@
       <h2>อัปโหลดและตรวจสอบข้อมูล</h2>
       <input id="excelFile" type="file" accept=".xlsx,.xls">
       <div class="admin-actions">
-        <button class="btn main" id="previewBtn" type="button">Validate & Preview</button>
-        <button class="btn" id="publishBtn" type="button" disabled>Publish</button>
+        <button class="btn main" id="previewBtn" type="button">ตรวจสอบและแสดงตัวอย่าง</button>
+        <button class="btn" id="publishBtn" type="button" disabled>เผยแพร่ข้อมูล</button>
       </div>
       <div class="validation-list" id="validationList"></div>
       <div class="admin-grid">
@@ -101,8 +130,8 @@
       <div class="policy-table-wrap"><table class="admin-table"><thead><tr><th>origin</th><th>destination</th><th>truck</th><th>cap used</th><th>capMaster</th><th>capDetail</th><th>status</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
     </section>
 
-    <section class="admin-panel">
-      <h2>Version History</h2>
+    <section class="admin-panel" id="versionPanel" hidden>
+      <h2>ประวัติเวอร์ชัน</h2>
       <div id="currentVersion" class="admin-status">ยังไม่มีข้อมูลเวอร์ชันปัจจุบัน</div>
       <div id="versionList" class="version-list"></div>
     </section>
@@ -130,11 +159,40 @@
       return { load40: Math.ceil(n * 0.4), load80: Math.ceil(n * 0.8), load90: Math.ceil(n * 0.9), load120: Math.ceil(n * 1.2) };
     };
 
-    let auth, db, user, isAdmin = false, selectedFile = null, previewData = null, validation = { errors: [], warnings: [] };
+    let auth, db, user, adminProfile = null, isAdmin = false, selectedFile = null, previewData = null, validation = { errors: [], warnings: [] };
 
     function setStatus(el, text, type = "") {
       el.textContent = text;
       el.className = `admin-status ${type}`.trim();
+    }
+
+    function authErrorMessage(error) {
+      const messages = {
+        "auth/email-already-in-use": "อีเมลนี้มีบัญชีอยู่แล้ว กรุณาเข้าสู่ระบบ",
+        "auth/weak-password": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+        "auth/invalid-email": "รูปแบบอีเมลไม่ถูกต้อง",
+        "auth/user-not-found": "ยังไม่มีบัญชีนี้ กรุณาสมัครบัญชีใหม่",
+        "auth/wrong-password": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+        "auth/invalid-credential": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+        "auth/popup-closed-by-user": "ยกเลิกการเข้าสู่ระบบ"
+      };
+      return messages[error?.code] || "ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง";
+    }
+
+    function setPanelVisibility(state) {
+      const loggedIn = state !== "loggedOut";
+      $("authPanel").hidden = state === "admin";
+      $("loginControls").hidden = state !== "loggedOut";
+      $("uidBox").hidden = state !== "unauthorized";
+      $("uploadPanel").hidden = state !== "admin";
+      $("versionPanel").hidden = state !== "admin";
+      $("headerLogoutBtn").hidden = !loggedIn;
+      $("adminUserEmail").textContent = loggedIn ? (user.email || user.uid) : "ยังไม่ได้เข้าสู่ระบบ";
+      $("adminUserRole").textContent = state === "admin" ? `สิทธิ์: ${adminProfile?.role || "admin"}` : state === "unauthorized" ? "รอเปิดสิทธิ์ผู้ดูแลระบบ" : "";
+      if (state !== "admin") {
+        $("versionList").innerHTML = "";
+        setStatus($("currentVersion"), "ยังไม่มีข้อมูลเวอร์ชันปัจจุบัน");
+      }
     }
 
     function renderValidation() {
@@ -165,29 +223,41 @@
       authMod.onAuthStateChanged(auth, async (currentUser) => {
         user = currentUser;
         await checkAdmin();
-        await loadVersions();
+        if (isAdmin) await loadVersions();
       });
     }
 
     async function checkAdmin() {
       if (!user) {
         isAdmin = false;
-        setStatus($("authStatus"), "รอเข้าสู่ระบบ");
-        $("uploadPanel").hidden = true;
-        $("uidBox").hidden = true;
+        adminProfile = null;
+        setPanelVisibility("loggedOut");
+        setStatus($("authStatus"), "ยังไม่ได้เข้าสู่ระบบ");
+        renderValidation();
         return;
       }
       const { fireMod } = window.firebaseMods;
-      const snap = await fireMod.getDoc(fireMod.doc(db, "admins", user.uid));
+      let snap;
+      try {
+        snap = await fireMod.getDoc(fireMod.doc(db, "admins", user.uid));
+      } catch (error) {
+        isAdmin = false;
+        adminProfile = null;
+        setPanelVisibility("unauthorized");
+        setStatus($("authStatus"), "ไม่สามารถตรวจสอบสิทธิ์ผู้ดูแลระบบได้ กรุณาลองใหม่อีกครั้ง", "blocked");
+        $("uidValue").textContent = user.uid;
+        renderValidation();
+        return;
+      }
       isAdmin = snap.exists() && snap.data().active !== false;
+      adminProfile = isAdmin ? snap.data() : null;
       if (isAdmin) {
-        setStatus($("authStatus"), `ผู้ดูแลระบบ: ${user.email || user.uid}`, "ok");
-        $("uploadPanel").hidden = false;
-        $("uidBox").hidden = true;
+        setPanelVisibility("admin");
+        setStatus($("authStatus"), "เข้าสู่ระบบผู้ดูแลระบบเรียบร้อย", "ok");
+        setStatus($("setupStatus"), "ระบบพร้อมใช้งาน", "ok");
       } else {
-        setStatus($("authStatus"), "บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้ดูแลระบบ", "blocked");
-        $("uploadPanel").hidden = true;
-        $("uidBox").hidden = false;
+        setPanelVisibility("unauthorized");
+        setStatus($("authStatus"), "บัญชีนี้เข้าสู่ระบบแล้ว แต่ยังไม่ได้รับสิทธิ์ผู้ดูแลระบบ", "blocked");
         $("uidValue").textContent = user.uid;
       }
       renderValidation();
@@ -195,16 +265,44 @@
 
     $("googleLogin").addEventListener("click", async () => {
       if (!hasConfig) return setStatus($("setupStatus"), "กรุณาเพิ่ม Firebase config ก่อนเข้าสู่ระบบ", "blocked");
-      const { authMod } = window.firebaseMods;
-      await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider());
+      try {
+        const { authMod } = window.firebaseMods;
+        await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider());
+      } catch (error) {
+        setStatus($("authStatus"), authErrorMessage(error), "blocked");
+      }
     });
     $("emailLogin").addEventListener("click", async () => {
       if (!hasConfig) return setStatus($("setupStatus"), "กรุณาเพิ่ม Firebase config ก่อนเข้าสู่ระบบ", "blocked");
-      const { authMod } = window.firebaseMods;
-      await authMod.signInWithEmailAndPassword(auth, $("emailInput").value, $("passwordInput").value);
+      try {
+        const { authMod } = window.firebaseMods;
+        await authMod.signInWithEmailAndPassword(auth, $("emailInput").value.trim(), $("passwordInput").value);
+      } catch (error) {
+        setStatus($("authStatus"), authErrorMessage(error), "blocked");
+      }
     });
-    $("logoutBtn").addEventListener("click", async () => auth && window.firebaseMods.authMod.signOut(auth));
-    $("copyUidBtn").addEventListener("click", async () => navigator.clipboard.writeText($("uidValue").textContent));
+    $("emailSignup").addEventListener("click", async () => {
+      if (!hasConfig) return setStatus($("setupStatus"), "กรุณาเพิ่ม Firebase config ก่อนเข้าสู่ระบบ", "blocked");
+      try {
+        const { authMod } = window.firebaseMods;
+        await authMod.createUserWithEmailAndPassword(auth, $("emailInput").value.trim(), $("passwordInput").value);
+      } catch (error) {
+        setStatus($("authStatus"), authErrorMessage(error), "blocked");
+      }
+    });
+    $("headerLogoutBtn").addEventListener("click", async () => {
+      if (!auth) return;
+      await window.firebaseMods.authMod.signOut(auth);
+      selectedFile = null;
+      previewData = null;
+      validation = { errors: [], warnings: [] };
+      if ($("excelFile")) $("excelFile").value = "";
+      renderValidation();
+    });
+    $("copyUidBtn").addEventListener("click", async () => {
+      await navigator.clipboard.writeText($("uidValue").textContent);
+      setStatus($("authStatus"), "คัดลอก UID แล้ว", "ok");
+    });
     $("excelFile").addEventListener("change", (event) => { selectedFile = event.target.files[0] || null; });
     $("previewBtn").addEventListener("click", previewExcel);
     $("publishBtn").addEventListener("click", publishData);
@@ -421,8 +519,13 @@
         renderValidation();
         return;
       }
-      const workbook = XLSX.read(await selectedFile.arrayBuffer(), { type: "array" });
-      previewData = convertWorkbook(workbook);
+      try {
+        const workbook = XLSX.read(await selectedFile.arrayBuffer(), { type: "array" });
+        previewData = convertWorkbook(workbook);
+      } catch (error) {
+        validation = { errors: ["ไม่สามารถอ่านไฟล์ Excel ได้ กรุณาตรวจสอบรูปแบบไฟล์"], warnings: [] };
+        previewData = null;
+      }
       $("routeRows").textContent = (previewData?.routeCapacityData.length || 0).toLocaleString("th-TH");
       $("vehicleRows").textContent = (previewData?.vehicleCapacityData.length || 0).toLocaleString("th-TH");
       $("truckRows").textContent = (previewData?.vehicleCapacityTrucks.length || 0).toLocaleString("th-TH");
@@ -432,31 +535,38 @@
     }
 
     async function publishData() {
-      if (!isAdmin || !previewData || !selectedFile || validation.errors.length) return;
-      const { fireMod } = window.firebaseMods;
-      const versionId = `v-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-      const chunks = buildDataChunks(previewData);
-      const metadata = {
-        versionId,
-        updatedAt: fireMod.serverTimestamp(),
-        updatedByUid: user.uid,
-        updatedByEmail: user.email || "",
-        routeRows: previewData.routeCapacityData.length,
-        vehicleRows: previewData.vehicleCapacityData.length,
-        hubRows: previewData.hubMasterData.length,
-        chunkCount: chunks.length,
-        status: "published",
-        note: selectedFile.name || ""
-      };
-      const writes = chunks.map((chunk) => ({
-        ref: fireMod.doc(db, "site_data", versionId, "chunks", chunk.id),
-        data: chunk.data
-      }));
-      writes.push({ ref: fireMod.doc(db, "site_versions", versionId), data: metadata });
-      writes.push({ ref: fireMod.doc(db, "site_current", "current"), data: metadata });
-      await commitBatchWrites(writes);
-      setStatus($("setupStatus"), "เผยแพร่ข้อมูลสำเร็จ", "ok");
-      await loadVersions();
+      if (!isAdmin || !previewData || !selectedFile || validation.errors.length) {
+        setStatus($("setupStatus"), "ไม่สามารถเผยแพร่ได้ กรุณาตรวจสอบสิทธิ์และข้อมูลก่อน", "blocked");
+        return;
+      }
+      try {
+        const { fireMod } = window.firebaseMods;
+        const versionId = `v-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+        const chunks = buildDataChunks(previewData);
+        const metadata = {
+          versionId,
+          updatedAt: fireMod.serverTimestamp(),
+          updatedByUid: user.uid,
+          updatedByEmail: user.email || "",
+          routeRows: previewData.routeCapacityData.length,
+          vehicleRows: previewData.vehicleCapacityData.length,
+          hubRows: previewData.hubMasterData.length,
+          chunkCount: chunks.length,
+          status: "published",
+          note: selectedFile.name || ""
+        };
+        const writes = chunks.map((chunk) => ({
+          ref: fireMod.doc(db, "site_data", versionId, "chunks", chunk.id),
+          data: chunk.data
+        }));
+        writes.push({ ref: fireMod.doc(db, "site_versions", versionId), data: metadata });
+        writes.push({ ref: fireMod.doc(db, "site_current", "current"), data: metadata });
+        await commitBatchWrites(writes);
+        setStatus($("setupStatus"), "เผยแพร่ข้อมูลสำเร็จ", "ok");
+        await loadVersions();
+      } catch (error) {
+        setStatus($("setupStatus"), "ไม่สามารถเผยแพร่ข้อมูลได้ กรุณาลองใหม่อีกครั้ง", "blocked");
+      }
     }
 
     async function loadVersions() {
@@ -473,33 +583,37 @@
       $("versionList").innerHTML = snap.docs.map((docSnap) => {
         const row = docSnap.data();
         const date = row.updatedAt?.toDate?.().toLocaleString("th-TH") || "-";
-        return `<div class="version-item"><div><b>${row.versionId || docSnap.id}</b><small>${date} โดย ${row.updatedByEmail || "-"} / route ${row.routeRows || 0} / vehicle ${row.vehicleRows || 0} / chunks ${row.chunkCount || 0}</small></div><button class="btn rollback-btn" data-version="${docSnap.id}" type="button">Rollback</button></div>`;
+        return `<div class="version-item"><div><b>${row.versionId || docSnap.id}</b><small>${date} โดย ${row.updatedByEmail || "-"} / route ${row.routeRows || 0} / vehicle ${row.vehicleRows || 0} / chunks ${row.chunkCount || 0}</small></div><button class="btn rollback-btn" data-version="${docSnap.id}" type="button">ย้อนกลับเวอร์ชันนี้</button></div>`;
       }).join("");
       document.querySelectorAll(".rollback-btn").forEach((btn) => btn.addEventListener("click", () => rollbackVersion(btn.dataset.version)));
     }
 
     async function rollbackVersion(versionId) {
       if (!isAdmin) return;
-      const { fireMod } = window.firebaseMods;
-      const snap = await fireMod.getDoc(fireMod.doc(db, "site_versions", versionId));
-      if (!snap.exists()) return;
-      const version = snap.data();
-      await fireMod.setDoc(fireMod.doc(db, "site_current", "current"), {
-        versionId: version.versionId || versionId,
-        updatedAt: fireMod.serverTimestamp(),
-        updatedByUid: user.uid,
-        updatedByEmail: user.email || "",
-        routeRows: version.routeRows || 0,
-        vehicleRows: version.vehicleRows || 0,
-        hubRows: version.hubRows || 0,
-        chunkCount: version.chunkCount || 0,
-        status: "published"
-      });
-      setStatus($("setupStatus"), "Rollback สำเร็จ", "ok");
-      await loadVersions();
+      try {
+        const { fireMod } = window.firebaseMods;
+        const snap = await fireMod.getDoc(fireMod.doc(db, "site_versions", versionId));
+        if (!snap.exists()) return;
+        const version = snap.data();
+        await fireMod.setDoc(fireMod.doc(db, "site_current", "current"), {
+          versionId: version.versionId || versionId,
+          updatedAt: fireMod.serverTimestamp(),
+          updatedByUid: user.uid,
+          updatedByEmail: user.email || "",
+          routeRows: version.routeRows || 0,
+          vehicleRows: version.vehicleRows || 0,
+          hubRows: version.hubRows || 0,
+          chunkCount: version.chunkCount || 0,
+          status: "published"
+        });
+        setStatus($("setupStatus"), "ย้อนกลับเวอร์ชันสำเร็จ", "ok");
+        await loadVersions();
+      } catch (error) {
+        setStatus($("setupStatus"), "ไม่สามารถย้อนกลับเวอร์ชันได้ กรุณาลองใหม่อีกครั้ง", "blocked");
+      }
     }
 
-    initFirebase().catch((error) => setStatus($("setupStatus"), `ไม่สามารถเริ่มระบบได้: ${error.message}`, "blocked"));
+    initFirebase().catch(() => setStatus($("setupStatus"), "ไม่สามารถเริ่มระบบได้ กรุณาตรวจสอบการตั้งค่า Firebase", "blocked"));
   </script>
 </body>
 </html>
