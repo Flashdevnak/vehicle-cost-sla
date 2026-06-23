@@ -110,6 +110,9 @@ li{margin:4px 0}
 .result-row .red{color:var(--red);font-weight:800}
 .result-row .green{color:var(--green);font-weight:800}
 .result-row.net{background:var(--head);color:#fff}
+.result-row.net-fine{background:var(--red)}
+.result-row.net-reward{background:var(--green)}
+.result-row.net-neutral{background:var(--head)}
 .result-row.net b,.result-row.net span{color:#fff;font-size:18px}
 .split{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
 .split div{background:#fff;border:1px solid var(--line-2);padding:10px}

@@ -437,13 +437,39 @@
       if (input.dataset.kind === "reward") reward += amount;
       else penalty += amount;
     });
-    const net = Math.max(0, penalty - reward);
+    const net = penalty - reward;
+    const netAmount = Math.abs(net);
+    const splitAmount = net === 0 ? 0 : netAmount;
+    const netState = net > 0 ? "fine" : net < 0 ? "reward" : "neutral";
+    const netLabel =
+      netState === "fine" ? "ยอดค่าปรับสุทธิ" : netState === "reward" ? "รางวัลสุทธิหลังหักค่าปรับ" : "ยอดสุทธิหลังหักรางวัล";
+    const shareContext = netState === "fine" ? "ค่าปรับสุทธิ" : netState === "reward" ? "รางวัลสุทธิ" : "";
+    const netTotal = $("netTotal");
+    const netRow = document.querySelector("#calculator .result-row.net");
     if ($("penaltyTotal")) $("penaltyTotal").textContent = `${fmt(penalty)} บาท`;
     if ($("rewardTotal")) $("rewardTotal").textContent = `${fmt(reward)} บาท`;
-    if ($("netTotal")) $("netTotal").textContent = `${fmt(net)} บาท`;
-    if ($("amShare")) $("amShare").textContent = `${fmt(net * 0.5)} บาท`;
-    if ($("mgShare")) $("mgShare").textContent = `${fmt(net * 0.3)} บาท`;
-    if ($("dmShare")) $("dmShare").textContent = `${fmt(net * 0.2)} บาท`;
+    if ($("netLabel")) $("netLabel").textContent = netLabel;
+    if (netTotal) {
+      netTotal.textContent = `${fmt(netAmount)} บาท`;
+      netTotal.classList.remove("red", "green", "neutral");
+      if (netState === "fine") netTotal.classList.add("red");
+      else if (netState === "reward") netTotal.classList.add("green");
+      else netTotal.classList.add("neutral");
+    }
+    if (netRow) {
+      netRow.classList.remove("net-fine", "net-reward", "net-neutral");
+      netRow.classList.add(`net-${netState}`);
+    }
+    [
+      ["amShareLabel", "AM 50%"],
+      ["mgShareLabel", "MG 30%"],
+      ["dmShareLabel", "DM 20%"],
+    ].forEach(([id, label]) => {
+      if ($(id)) $(id).textContent = shareContext ? `${label} (${shareContext})` : label;
+    });
+    if ($("amShare")) $("amShare").textContent = `${fmt(splitAmount * 0.5)} บาท`;
+    if ($("mgShare")) $("mgShare").textContent = `${fmt(splitAmount * 0.3)} บาท`;
+    if ($("dmShare")) $("dmShare").textContent = `${fmt(splitAmount * 0.2)} บาท`;
   }
 
   function bindEvents() {
